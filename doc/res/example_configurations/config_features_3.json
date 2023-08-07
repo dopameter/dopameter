@@ -1,0 +1,34 @@
+{
+  "corpora": {
+    "gra": {
+      "path_text_data": "/home/chlor/PycharmProjects/feattext/doc/res/example_corpora/gra",
+      "language": "de"
+    },
+    "wiki": {
+      "path_text_data": "/home/chlor/PycharmProjects/feattext/doc/res/example_corpora/wiki",
+      "language": "de"
+    }
+  },
+  "settings": {
+    "tasks": ["features", "counts", "corpus_characteristics"],
+    "store_sources": true,
+    "file_format_features": ["csv"],
+    "file_format_clustering": "csv",
+    "file_format_plots": ["png", "svg"],
+    "file_format_dicts": "txt",
+    "boxplot_height": 5,
+    "most_frequent_words": 2000
+  },
+  "output": {
+      "path_features":        "/home/chlor/PycharmProjects/feattext/doc/res/results/features",
+      "path_features_detail": "/home/chlor/PycharmProjects/feattext/doc/res/results/features_detail",
+      "path_summary":         "/home/chlor/PycharmProjects/feattext/doc/res/results/summary",
+      "path_compare":         "/home/chlor/PycharmProjects/feattext/doc/res/results/compare",
+      "path_counts":          "/home/chlor/PycharmProjects/feattext/doc/res/results/counts",
+      "path_sources":         "/home/chlor/PycharmProjects/feattext/doc/res/results/sources",
+      "path_clusters":        "/home/chlor/PycharmProjects/feattext/doc/res/results/clusters"
+    },
+  "features": {
+    "ngrams": [1,2,3]
+  }
+}

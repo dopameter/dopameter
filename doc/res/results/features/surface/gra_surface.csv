@@ -1,0 +1,3 @@
+document,avg_token_len_chars,avg_sent_len_tokens,avg_sent_len_chars,flesch_kincaid_grade_level,smog,coleman_liau,ari,forcast,gunning_fog,wiener_sachtextformel_1,wiener_sachtextformel_2,wiener_sachtextformel_3,wiener_sachtextformel_4,flesch_reading_ease,heylighen_formality
+Albers.txt,5.709909,12.783334,82.416664,12.907338,24.994818,18.783272,14.097731,15.24,17.886013,1.3678907,-0.5141063,1.4131888,1.7569056,59.999035,74.601845
+Amanda_Alzheimer.txt,4.423077,12.235294,61.901962,6.682167,20.341854,12.244887,8.688565,16.3375,13.552668,1.2455803,-0.6404551,1.2783487,1.3729101,87.4095,84.48043

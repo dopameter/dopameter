@@ -1,0 +1,3 @@
+document,sem_rich_synonyms,sem_rich_taxonyms,sem_rich_hyponyms,sem_rich_holonyms,sem_rich_antonyms,sem_rich_meronyms,sem_depth_min,sem_depth_max,synsets_avg,senses_avg
+Albers.txt,5.1868963,1.4517242,3.3124137,0.029655172,0.4765517,0.022068966,0.41963017,0.46372688,0.48482758,0.48482758
+Amanda_Alzheimer.txt,3.8589065,0.7601411,1.8897707,0.038800705,0.49823633,0.0070546735,0.38444924,0.412527,0.40828925,0.40828925

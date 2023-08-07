@@ -1,0 +1,4 @@
+{
+  "languages": ["de", "en"],
+  "modules": ["lang", "wordnet", "const", "emotion"]
+}

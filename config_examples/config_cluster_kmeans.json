@@ -1,0 +1,70 @@
+{
+  "corpora": {
+    "de.Clin": {
+      "path_text_data": "/home/chlor/data/usecase/de/Clinical_Documents/",
+      "language": "de"
+    },
+    "de.PubMed": {
+      "path_text_data": "/home/chlor/data/usecase/de/PubMed_Abstracts/",
+      "language": "de"
+    },
+    "de.SocMed": {
+      "path_text_data": "/home/chlor/data/usecase/de/Social_Media/",
+      "language": "de"
+    },
+    "de.Wiki": {
+      "path_text_data": "/home/chlor/data/usecase/de/Wikipedia/",
+      "language": "de"
+    },
+    "de.News": {
+      "path_text_data": "/home/chlor/data/usecase/de/Newspaper/",
+      "language": "de"
+    },
+    "en.Clin": {
+      "path_text_data": "/home/chlor/data/usecase/en/Clincial_EN/",
+      "language": "en"
+    },
+    "en.SocMed": {
+      "path_text_data": "/home/chlor/data/usecase/en/Social_Media/",
+      "language": "en"
+    }
+  },
+  "settings": {
+    "tasks": ["cluster", "plot"],
+    "store_sources": true,
+    "file_format_features": ["csv"],
+    "file_format_clustering": "csv",
+    "file_format_plots": ["png", "svg"],
+    "file_format_dicts": "txt",
+    "boxplot_height": 5,
+    "most_frequent_words": 2000
+  },
+  "output": {
+      "path_features": "/home/chlor/data/output_feattext/usecase/features",
+      "path_features_detail": "/home/chlor/data/output_feattext/usecase/features_detail",
+      "path_summary": "/home/chlor/data/output_feattext/usecase/summary",
+      "path_compare": "/home/chlor/data/output_feattext/usecase/compare",
+      "path_counts": "/home/chlor/data/output_feattext/usecase/counts",
+      "path_sources": "/home/chlor/data/output_feattext/usecase/sources",
+      "path_clusters": "/home/chlor/data/output_feattext/usecase/clusters"
+    },
+  "features": {
+    "lexical_richness": "default",
+    "negation": "default",
+    "ner": "default",
+    "pos": "default",
+    "emotion": "default",
+    "token_characteristics": "default",
+    "surface": "default",
+    "syntax_dependency_metrics" : "default",
+    "syntax_dependency_tree": "default"
+  },
+  "cluster" : {
+    "k-means": {
+      "n_clusters": 5,
+      "random_state": "None",
+      "n_init": 50,
+      "max_iter": 300
+    }
+  }
+}

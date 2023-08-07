@@ -1,0 +1,3 @@
+document,toks_min_three_syllables,toks_larger_six_letters,toks_one_syllable,syllables,letter_tokens,no_digit_tokens
+Albers.txt,452,551,476,2760,1340,1351
+Amanda_Alzheimer.txt,237,319,293,1531,938,974

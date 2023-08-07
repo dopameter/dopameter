@@ -1,0 +1,3 @@
+document,AvgMaxDepth,AvgFan,MaxFan,AvgNonTerminales_sent,AvgConstituents_sent,AvgTunits_sent,AvgLenConstituents,AvgLenTunits,AvgOutdegreeCentralization,AvgClosenessCentralization
+Albers.txt,4.572581,3.0648568,21.0,4.601626,18.125,0.8666667,2.6606896,9.923077,0.043472353,0.3421464
+Amanda_Alzheimer.txt,3.6637168,3.47806,38.0,3.0892856,16.117647,0.5686275,2.1435523,5.051724,0.06035662,0.39099565

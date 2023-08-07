@@ -1,0 +1,3 @@
+document,avg_token_len_chars,avg_sent_len_tokens,avg_sent_len_chars,flesch_kincaid_grade_level,smog,coleman_liau,ari,forcast,gunning_fog,wiener_sachtextformel_1,wiener_sachtextformel_2,wiener_sachtextformel_3,wiener_sachtextformel_4,flesch_reading_ease,heylighen_formality
+Koronarthrombose.txt,4.79,7.142857,36.642857,8.095,0.0,22.055,16.820179,0.0,14.457143,0.3889819,-1.5026236,0.30305257,0.68355006,69.77917,97.22222
+Olfaktorischer Neglect.txt,4.148148,9.818182,45.272728,6.71873,0.0,12.844932,8.406127,0.0,14.161395,0.85133946,-1.040252,0.82011104,1.0748545,81.634514,91.54929

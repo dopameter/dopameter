@@ -1,0 +1,118 @@
+{
+        "spacy_languages":
+        {
+                "zh": "zh_core_web_sm",
+                "en": "en_core_web_sm",
+                "da": "da_core_news_sm",
+                "nl": "nl_core_news_sm",
+                "fr": "fr_core_news_sm",
+                "de": "de_core_news_sm",
+                "el": "el_core_news_sm",
+                "it": "it_core_news_sm",
+                "ja": "ja_core_news_sm",
+                "lt": "lt_core_news_sm",
+                "nb": "nb_core_news_sm",
+                "pl": "pl_core_news_sm",
+                "pt": "pt_core_news_sm",
+                "ro": "ro_core_news_sm",
+                "ru": "ru_core_news_sm",
+                "es": "es_core_news_sm",
+                "ca": "ca_core_news_sm",
+                "mk": "mk_core_news_sm",
+                "hr": "hr_core_news_sm",
+                "fi": "fi_core_news_sm",
+                "ko": "mk_core_news_sm"
+        },
+
+                "spacy_languages_def":
+        {
+                "zh": "Chinese",
+                "en": "English",
+                "da": "Danish",
+                "nl": "Dutch",
+                "fr": "French",
+                "de": "German",
+                "el": "Greek",
+                "it": "Italian",
+                "ja": "Japanese",
+                "lt": "Lithuanian",
+                "nb": "Norwegian Bokmål",
+                "pl": "Polish",
+                "pt": "Portuguese",
+                "ro": "Romanian",
+                "ru": "Russian",
+                "es": "Spanish",
+                "ca": "Catalan",
+                "hr": "Croatian",
+                "fi": "Finnish",
+                "ko": "Korean"
+        },
+
+        "benepar_languages":
+        {
+                "en": "benepar_en3",
+                "zh": "benepar_zh2",
+                "arb": "benepar_ar2",
+                "de": "benepar_de2",
+                "eu": "benepar_eu2",
+                "fr": "benepar_fr2",
+                "he": "benepar_he2",
+                "hu": "benepar_hu2",
+                "ko": "benepar_ko2",
+                "pl": "benepar_pl2",
+                "sv": "benepar_sv2"
+        },
+
+        "wordnet_languages":
+        {
+                "en": "omw-en:1.4",
+                "de": "odenet:1.4",
+                "sq": "omw-sq:1.4",
+                "arb": "omw-arb:1.4",
+                "bg": "omw-bg:1.4",
+                "zh": "omw-cmn:1.4",
+                "hr": "omw-hr:1.4",
+                "da": "omw-da:1.4",
+                "fi": "omw-fi:1.4",
+                "el": "omw-el:1.4",
+                "he": "omw-he:1.4",
+                "is": "omw-is:1.4",
+                "it": "omw-iwn:1.4",
+                "jp": "omw-ja:1.4",
+                "lt": "omw-lt:1.4",
+                "ca": "omw-ca:1.4",
+                "eu": "omw-eu:1.4",
+                "gl": "omw-gl:1.4",
+                "es": "omw-es:1.4",
+                "nn": "omw-nn:1.4",
+                "nb": "omw-nb:1.4",
+                "nl": "omw-nl:1.4",
+                "pt": "omw-pt:1.4",
+                "pl": "omw-pl:1.4",
+                "ro": "omw-ro:1.4",
+                "sk": "omw-sk:1.4",
+                "sl": "omw-sl:1.4",
+                "sv": "omw-sv:1.4",
+                "th": "omw-th:1.4",
+                "fr": "omw-fr:1.4",
+                "id": "omw-id:1.4",
+                "zsm": "omw-zsm:1.4"
+    },
+
+        "heideltime_languages":
+        {
+            "arb": "ARABIC",
+            "zh": "CHINESE",
+            "hr": "CROATIAN",
+            "nl": "DUTCH",
+            "en": "ENGLISH",
+            "et": "ESTONIAN",
+            "fr": "FRENCH",
+            "de": "GERMAN",
+            "it": "ITALIAN",
+            "pt": "PORTUGUESE",
+            "ru": "RUSSIAN",
+            "es": "SPANISH",
+            "vi": "VIETNAMESE"
+        }
+}
