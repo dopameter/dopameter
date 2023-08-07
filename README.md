@@ -40,11 +40,11 @@ Three components build the basis:
 {
   "corpora": {
     "gra": {
-      "path_text_data": "/home/chlor/PycharmProjects/feattext/doc/res/example_corpora/gra",
+      "path_text_data": "doc/res/example_corpora/gra",
       "language": "de"
     },
     "wiki": {
-      "path_text_data": "/home/chlor/PycharmProjects/feattext/doc/res/example_corpora/wiki",
+      "path_text_data": "doc/res/example_corpora/wiki",
       "language": "de"
     }
   },
