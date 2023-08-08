@@ -1,7 +1,7 @@
 ## Installation and Preparation of Language Models and External Resources
 
 * This tool is [Python](https://www.python.org/) based and necessary for usage; preferred version [3.10.6](https://www.python.org/downloads/release/python-3106/)
-  * The usage of a virtual environment is preferred:
+  * The usage of a [virtual environment](https://docs.python.org/3/library/venv.html) is preferred:
     ```commandline
     python -m venv venv
     source venv/bin/activate

@@ -1,6 +1,6 @@
 # Configure your `config.json`
 
-(Mandatory definitions are highlighted in bold)
+(Mandatory definitions are highlighted in bold.)
 
 ## Input: Corpora of Text Files
 
@@ -109,9 +109,19 @@ E.g., copy feature results from `dev1/features` and `dev2/features` into `dev/fe
       "dict_2": "/path/to/dicts_2/"
     }
     ```
+
 ## Run
 
-* open a terminal a type: `python main.py config.json`
+* Examples of configuration files:
+  * [Very simple use case of 2 text corpora](res/example_configurations) with [text example](res/example_corpora)
+  * [Use case of 6 text corpora](../config_examples)
+
+* We prefer a [virtual environment](https://docs.python.org/3/library/venv.html).
+* We prefer to run separated configurations for different tasks and features of the feature hubs. The run of all functionalities in one run can crash your system (e.g., notebook device of 16 RAB) or use a server-based device.
+
+* Open a terminal a type: `python main.py config.json`
+
+
 
 ## Create a package *.exe (Windows)
 * Create archive:
