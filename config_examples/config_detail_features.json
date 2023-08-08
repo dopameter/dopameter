@@ -48,13 +48,11 @@
     "token_characteristics": "default",
     "pos": "default",
     "ner": "default",
+
     "surface": "default",
     "lexical_richness": "default",
     "syntax_dependency_metrics" : "default",
-
     "wordnet_semantic_relations": "default",
-
-    "emotion": "default",
-    "negation" : "default"
+    "emotion": "default"
   }
 }

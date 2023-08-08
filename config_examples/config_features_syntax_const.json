@@ -16,7 +16,11 @@
       "path_text_data": "/home/chlor/data/usecase/de/Wikipedia/",
       "language": "de"
     },
-    "en.Clin": {
+    "de.News": {
+      "path_text_data": "/home/chlor/data/usecase/de/Newspaper/",
+      "language": "de"
+    },
+    "en..Clin": {
       "path_text_data": "/home/chlor/data/usecase/en/Clincial_EN/",
       "language": "en"
     },

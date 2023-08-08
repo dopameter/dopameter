@@ -45,7 +45,7 @@
       "path_clusters": "/home/chlor/data/output_feattext/usecase/clusters"
     },
   "features": {
-    "ngrams": [1]
+    "ngrams": [1,2,3]
   },
   "cluster" : {
     "t-sne": {

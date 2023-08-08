@@ -7,7 +7,7 @@
   },
   "settings": {
     "tasks": ["features", "counts", "corpus_characteristics"],
-    "store_sources": true,
+    "store_sources": false,
     "file_format_features": ["csv"],
     "file_format_clustering": "csv",
     "file_format_plots": ["png", "svg"],
@@ -26,6 +26,9 @@
     },
   "features": {
     "token_characteristics": "default",
-    "surface": "default"
+    "pos": "default",
+    "ner": "default",
+    "surface": "default",
+    "lexical_richness": "default"
   }
 }
