@@ -71,7 +71,6 @@ class ClusterCorpora:
 
               "features": {
                 "lexical_richness": "default",
-                "negation": "default",
                 "ner": "default",
                 "pos": "default",
                 "emotion": "default",
@@ -104,7 +103,6 @@ class ClusterCorpora:
 
               "features": {
                 "lexical_richness": "default",
-                "negation": "default",
                 "ner": "default",
                 "pos": "default",
                 "emotion": "default",

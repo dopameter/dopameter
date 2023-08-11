@@ -9,12 +9,12 @@ import logging
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 from dopameter.configuration.installation import ConfLanguages
-from dopameter.output import write_df_to_file, write_macro_df_to_file, boxplot_2dim_array, sum_all_corpora, write_macro_features, handle_features_output
+from dopameter.output import write_df_to_file, write_macro_df_to_file, boxplot_2dim_array, sum_all_corpora, \
+    write_macro_features, handle_features_output
 from dopameter.compare import CompareAnalytics
 
 
 class DoPaMeter:
-
     """DoPaMeter
 
     Parameters
@@ -40,7 +40,6 @@ class DoPaMeter:
     ):
         self.config = config
 
-
     def run_dopameter(self):
 
         tasks = self.config['settings']['tasks']
@@ -62,12 +61,10 @@ class DoPaMeter:
         file_format_features = self.config['settings']['file_format_features']
         file_format_plots = self.config['settings']['file_format_plots']
 
-
         if 'compare' in tasks and 'features' not in tasks and 'counts' not in tasks and 'corpus_characteristics' not in tasks:
             if set(self.config['compare']).intersection({'bleu', 'nist', 'meteor'}):
                 self.config['features'] = 'bleu'
                 tasks += 'features'
-
 
         if set(tasks).intersection({'features', 'counts', 'corpus_characteristics'}):
 
@@ -83,7 +80,8 @@ class DoPaMeter:
             if 'features' in tasks or 'counts' in tasks:
                 features = self.config['features']
                 if not features:
-                    raise ValueError("Stop running task 'features'! - No features defined! Define 'features' in your config file!")
+                    raise ValueError(
+                        "Stop running task 'features'! - No features defined! Define 'features' in your config file!")
                 else:
                     logging.info('features: ' + str(features))
 
@@ -188,7 +186,7 @@ class DoPaMeter:
                     )
 
                 if 'surface' in features.keys():
-                    import spacy_syllables # Do not delete this line!
+                    import spacy_syllables  # Do not delete this line!
                     nlp.add_pipe("syllables", after="tagger")
                     if lang == 'de':
                         from dopameter.features.surface_readability.de import SurfaceFeaturizesDE
@@ -220,8 +218,8 @@ class DoPaMeter:
                     )
 
                 if ('wordnet_synsets' in features.keys() or
-                    'wordnet_senses' in features.keys() or
-                    'wordnet_semantic_relations' in features.keys()
+                        'wordnet_senses' in features.keys() or
+                        'wordnet_semantic_relations' in features.keys()
                 ):
                     from dopameter.features.semantics.wordnet_relations import WordNetFeatures
                     semantics_wordnet = WordNetFeatures(
@@ -236,22 +234,28 @@ class DoPaMeter:
                         features=features['emotion']
                     )
 
-
-                logging.info('===============================================================================================')
+                logging.info(
+                    '===============================================================================================')
                 logging.info('Initialization of languages and feature modules done')
-                logging.info('===============================================================================================')
+                logging.info(
+                    '===============================================================================================')
                 logging.info('Start to process corpora - language: ' + ConfLanguages().lang_def[lang])
-                logging.info('===============================================================================================')
+                logging.info(
+                    '===============================================================================================')
 
                 for corpus in [corpus for corpus in corpora if corpus.lang == lang]:
                     corp_i += 1
-                    logging.info('-----------------------------------------------------------------------------------------------')
-                    logging.info('\tStart to process corpus (' + str(corp_i) + '/'+ str(len(corpora)) + '): ' + corpus.name)
+                    logging.info(
+                        '-----------------------------------------------------------------------------------------------')
+                    logging.info(
+                        '\tStart to process corpus (' + str(corp_i) + '/' + str(len(corpora)) + '): ' + corpus.name)
                     logging.info('\t# ' + str(len(corpus.files)) + ' files from ' + corpus.path)
-                    logging.info('-----------------------------------------------------------------------------------------------')
+                    logging.info(
+                        '-----------------------------------------------------------------------------------------------')
 
                     for i, f in enumerate(corpus.files):
-                        logging.info("process corpus '" + corpus.name + "' (" + str(corp_i) + '/'+ str(len(corpora)) + ') - file (' + str(i+1) + '/' + str(len(corpus.files)) + ') ' + str(f))
+                        logging.info("process corpus '" + corpus.name + "' (" + str(corp_i) + '/' + str(
+                            len(corpora)) + ') - file (' + str(i + 1) + '/' + str(len(corpus.files)) + ') ' + str(f))
 
                         doc_name = os.path.basename(f)
                         plain_text = open(file=f, encoding=corpus.encoding).read()
@@ -278,13 +282,6 @@ class DoPaMeter:
                                 corpus.update_properties(
                                     feature='pos',
                                     data=pos.feat_doc(doc=doc),
-                                    doc_name=doc_name
-                                )
-
-                            if 'negation' in features.keys():
-                                corpus.update_properties(
-                                    feature='negation',
-                                    data=negation.feat_doc(doc=doc),
                                     doc_name=doc_name
                                 )
 
@@ -350,10 +347,9 @@ class DoPaMeter:
                                         doc_name=doc_name
                                     )
 
-
                             if ('wordnet_synsets' in features.keys() or
-                                    'wordnet_senses' in features.keys() or
-                                    'wordnet_semantic_relations' in features.keys()
+                                'wordnet_senses' in features.keys() or
+                                'wordnet_semantic_relations' in features.keys()
                             ) and lang in ConfLanguages().wordnet_languages:
 
                                 sem_wordnet_feats = semantics_wordnet.feat_doc(doc=doc)
@@ -362,36 +358,6 @@ class DoPaMeter:
                                     corpus.update_properties(
                                         feature=feature_file,
                                         data=sem_wordnet_feats[feature_file],
-                                        doc_name=doc_name
-                                    )
-
-                            if 'semantic_relations_wiktionary' in features.keys():
-                                corpus.update_properties(
-                                    feature='semantic_relations_wiktionary',
-                                    data=semantics_wiktionary.feat_doc(doc=doc),
-                                    doc_name=doc_name
-                                )
-
-                            if 'temporal' in features.keys():
-                                corpus.update_properties(
-                                    feature='temporal',
-                                    data=temporal.feat_doc(doc=doc),
-                                    doc_name=doc_name
-                                )
-
-                            if 'biomedical_terminologies' in features.keys():
-                                if lang == 'de':
-                                    term_feats = biomedical_de.feat_doc(doc=doc)
-                                    for feature_file in term_feats.keys():
-                                        corpus.update_properties(
-                                            feature=feature_file,
-                                            data=term_feats[feature_file],
-                                            doc_name=doc_name
-                                        )
-                                if lang == 'en':
-                                    corpus.update_properties(
-                                        feature='biomedical_terminologies',
-                                        data=biomedical_en.feat_doc(doc=doc),
                                         doc_name=doc_name
                                     )
 
@@ -503,7 +469,8 @@ class DoPaMeter:
 
                         elif feat == 'syntax_constituency_metrics':
 
-                            corpus.macro_features['syntax_constituency_metrics'] = syntax_constituency.feat_corpus(corpus)
+                            corpus.macro_features['syntax_constituency_metrics'] = syntax_constituency.feat_corpus(
+                                corpus)
 
                             write_macro_features(
                                 path_summary=path_summary,
@@ -514,7 +481,8 @@ class DoPaMeter:
 
                             if bool(self.config['settings']['store_sources']) == False:
                                 corpus.syntax.clear()
-                            summary_df['corpus wise'] = pd.DataFrame(corpus.macro_features['syntax_constituency_metrics'])
+                            summary_df['corpus wise'] = pd.DataFrame(
+                                corpus.macro_features['syntax_constituency_metrics'])
 
 
                         elif feat == 'wordnet_semantic_relations':
@@ -527,7 +495,8 @@ class DoPaMeter:
                                 feature_name='wordnet_semantic_relations',
                                 file_format_features=file_format_features
                             )
-                            summary_df['corpus wise'] = pd.DataFrame(corpus.macro_features['wordnet_semantic_relations'])
+                            summary_df['corpus wise'] = pd.DataFrame(
+                                corpus.macro_features['wordnet_semantic_relations'])
 
                         write_df_to_file(
                             data=summary_df.round(2),
@@ -556,20 +525,22 @@ class DoPaMeter:
                                 corpus_features[item] = {}
 
                                 for doc_name in corpus.counts[feat][item]:
-
-                                    corpus_features[item][doc_name] = (corpus.counts[feat][item][doc_name] / corpus.document_cnt_characteristics[doc_name]['tokens'])
+                                    corpus_features[item][doc_name] = (corpus.counts[feat][item][doc_name] /
+                                                                       corpus.document_cnt_characteristics[doc_name][
+                                                                           'tokens'])
 
                             handle_features_output(
                                 path_features=path_features,
                                 feat=feat,
-                                df_corpus_features=pd.DataFrame.from_dict(data=corpus_features, dtype='float32').rename_axis('document'),
+                                df_corpus_features=pd.DataFrame.from_dict(data=corpus_features,
+                                                                          dtype='float32').rename_axis('document'),
                                 corpus=corpus,
                                 file_format_features=file_format_features,
                                 path_summary=path_summary
                             )
 
                         df_corpus_counts = pd.DataFrame(corpus.counts[feat]).rename_axis('document')
-                        corpus.counts[feat].clear() # clear storage
+                        corpus.counts[feat].clear()  # clear storage
 
                         write_df_to_file(
                             data=df_corpus_counts,
@@ -603,7 +574,8 @@ class DoPaMeter:
                             )
                             x_tfidf = tfid_vectorizer.fit_transform(corpus.documents.values())
 
-                            df_tfidf = pd.DataFrame(x_tfidf.toarray(), columns=list(tfid_vectorizer.get_feature_names_out()))
+                            df_tfidf = pd.DataFrame(x_tfidf.toarray(),
+                                                    columns=list(tfid_vectorizer.get_feature_names_out()))
                             df_tfidf['document'] = list(corpus.documents.keys())
                             df_tfidf = df_tfidf.set_index('document')
 
@@ -631,12 +603,13 @@ class DoPaMeter:
 
                             if 'bleu' in self.config['compare']:
                                 with open(
-                                    file=path_corpus_res + os.sep + corpus.name + '__' + 'bleu_documents' + '.json',
-                                    mode='w',
-                                    encoding='utf-8'
+                                        file=path_corpus_res + os.sep + corpus.name + '__' + 'bleu_documents' + '.json',
+                                        mode='w',
+                                        encoding='utf-8'
                                 ) as f:
                                     json.dump(corpus.documents, f, ensure_ascii=False)
-                                logging.info('Source: ' + path_corpus_res + os.sep + corpus.name + '__' + 'bleu_documents' + '.json')
+                                logging.info(
+                                    'Source: ' + path_corpus_res + os.sep + corpus.name + '__' + 'bleu_documents' + '.json')
 
                         for n in corpus.ngrams:
                             with open(
@@ -646,7 +619,8 @@ class DoPaMeter:
                             ) as f:
                                 json.dump(corpus.ngrams[n], f, ensure_ascii=False)
                                 corpus.ngrams[n].clear()
-                            logging.info('Source: ' + path_corpus_res + os.sep + corpus.name + '__' + 'ngrams_' + str(n) + '.json')
+                            logging.info('Source: ' + path_corpus_res + os.sep + corpus.name + '__' + 'ngrams_' + str(
+                                n) + '.json')
 
                         for term in corpus.terminologies:
                             with open(
@@ -657,7 +631,6 @@ class DoPaMeter:
                                 json.dump(corpus.terminologies[term], f, ensure_ascii=False)
                             logging.info('Source: ' + path_corpus_res + os.sep + corpus.name + '__' + term + '.json')
 
-
                         if 'features' in tasks:
 
                             if 'lexical_richness' in self.config['features'].keys() and 'lexical_richness' in features:
@@ -667,12 +640,14 @@ class DoPaMeter:
                                         encoding='utf-8'
                                 ) as f:
                                     json.dump(dict(collections.Counter(function_words)), f, ensure_ascii=False)
-                                logging.info('Source: ' + path_corpus_res + os.sep + corpus.name + '__' + 'function_words' + '.json')
+                                logging.info(
+                                    'Source: ' + path_corpus_res + os.sep + corpus.name + '__' + 'function_words' + '.json')
 
                             if 'surface' in self.config['features'].keys() and 'surface' in features:
 
                                 for elem in ['syllables', 'letter_tokens', 'no_digit_tokens', 'sentences',
-                                             'toks_min_three_syllables', 'toks_larger_six_letters', 'toks_one_syllable']:
+                                             'toks_min_three_syllables', 'toks_larger_six_letters',
+                                             'toks_one_syllable']:
 
                                     if elem in corpus.surface.keys():
                                         with open(
@@ -680,41 +655,50 @@ class DoPaMeter:
                                                 mode='w',
                                                 encoding='utf-8'
                                         ) as f:
-                                            json.dump(dict(collections.Counter(corpus.surface[elem])), f, ensure_ascii=False)
-                                        logging.info('Source: ' + path_corpus_res + os.sep + corpus.name + '__' + elem + '.json')
+                                            json.dump(dict(collections.Counter(corpus.surface[elem])), f,
+                                                      ensure_ascii=False)
+                                        logging.info(
+                                            'Source: ' + path_corpus_res + os.sep + corpus.name + '__' + elem + '.json')
                                 corpus.surface.clear()
 
-            logging.info('===============================================================================================')
+            logging.info(
+                '===============================================================================================')
             logging.info('Processing of Language ' + ConfLanguages().lang_def[lang] + ' done.')
-            logging.info('===============================================================================================')
+            logging.info(
+                '===============================================================================================')
 
             if 'features' in tasks:
                 logging.info('Output of features in ' + str(path_features))
             if 'counts' in tasks and corpora:
                 logging.info('Output of counts in ' + str(path_counts))
-                logging.info('===============================================================================================')
+                logging.info(
+                    '===============================================================================================')
 
         if 'compare' in tasks:
-            logging.info('===============================================================================================')
+            logging.info(
+                '===============================================================================================')
             logging.info('Compare sources.')
-            logging.info('===============================================================================================')
+            logging.info(
+                '===============================================================================================')
 
             analysis = CompareAnalytics(
-                path_sources = self.config['output']['path_sources'],
-                corpora = self.config['corpora'],
-                path_compare = self.config['output']['path_compare'],
-                compare_tasks = self.config['compare'],
-                file_format_features = file_format_features,
-                most_frequent_words = self.config['settings']['most_frequent_words'],
-                tasks = self.config['settings']['tasks']
+                path_sources=self.config['output']['path_sources'],
+                corpora=self.config['corpora'],
+                path_compare=self.config['output']['path_compare'],
+                compare_tasks=self.config['compare'],
+                file_format_features=file_format_features,
+                most_frequent_words=self.config['settings']['most_frequent_words'],
+                tasks=self.config['settings']['tasks']
             )
 
             analysis.source_analytics()
 
         if 'features_detail' in tasks:
-            logging.info('===============================================================================================')
+            logging.info(
+                '===============================================================================================')
             logging.info('Feature details.')
-            logging.info('===============================================================================================')
+            logging.info(
+                '===============================================================================================')
 
             feature_properties = {}
             feature_properties_parent = {}
@@ -772,14 +756,15 @@ class DoPaMeter:
                     data = [feature_properties[feat_prop][d] for d in feature_properties[feat_prop]]
                     index_labels = list(feature_properties[feat_prop].keys())
 
-                    for empty_corpus in [corpus for corpus in corpora if corpus not in feature_properties[feat_prop].keys()]:
+                    for empty_corpus in [corpus for corpus in corpora if
+                                         corpus not in feature_properties[feat_prop].keys()]:
                         data.append([])
                         index_labels.append(empty_corpus)
 
                     write_df_to_file(
-                        data = pd.DataFrame(data, index=index_labels),
-                        path_file = path_sub_feat_file,
-                        file_format_features = file_format_features
+                        data=pd.DataFrame(data, index=index_labels),
+                        path_file=path_sub_feat_file,
+                        file_format_features=file_format_features
                     )
 
         if 'plot' in tasks and 'features_detail' in tasks:
@@ -791,7 +776,8 @@ class DoPaMeter:
 
                 for f in glob.glob(feature_file + os.sep + '*.csv'):
 
-                    if feature_file.split(os.sep)[len(feature_file.split(os.sep)) - 2] in self.config['features'].keys():
+                    if feature_file.split(os.sep)[len(feature_file.split(os.sep)) - 2] in self.config[
+                        'features'].keys():
                         data = pd.read_csv(f, index_col=0, keep_default_na=False)
                         data_bp = data.transpose().to_dict()
 
@@ -799,7 +785,8 @@ class DoPaMeter:
                             title="Feature '" + os.path.basename(f).replace('.csv', '') + "'",
                             labels=data.index.values.tolist(),
                             file_plot=f.replace('.csv', ''),
-                            data=[[float(data_bp[keys][vals]) for vals in data_bp[keys] if data_bp[keys][vals]] for keys in data_bp],
+                            data=[[float(data_bp[keys][vals]) for vals in data_bp[keys] if data_bp[keys][vals]] for keys
+                                  in data_bp],
                             file_format_plots=file_format_plots,
                             feature_cfg=os.path.basename(f).replace('.csv', ''),
                             height=int(self.config['settings']['boxplot_height'])
@@ -808,12 +795,14 @@ class DoPaMeter:
         if 'cluster' in tasks:
             if os.path.isdir(self.config['output']['path_features']):
 
-                logging.info('===============================================================================================')
+                logging.info(
+                    '===============================================================================================')
                 logging.info('Start clustering')
                 logging.info('path_features: ' + self.config['output']['path_features'])
                 logging.info('path_clusters: ' + self.config['output']['path_clusters'])
 
-                logging.info('===============================================================================================')
+                logging.info(
+                    '===============================================================================================')
 
                 from dopameter.cluster import ClusterCorpora
                 cluster = ClusterCorpora(
@@ -829,7 +818,8 @@ class DoPaMeter:
                 )
                 cluster.compute_clusters()
             else:
-                exit("The given directory of features " + self.config['output']['path_features'] + " is not existing. No clusting started!")
+                exit("The given directory of features " + self.config['output'][
+                    'path_features'] + " is not existing. No clusting started!")
 
         logging.info('===============================================================================================')
         logging.info('Running DoPa Meter done.')

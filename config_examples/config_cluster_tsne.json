@@ -56,9 +56,7 @@
     "emotion": "default",
 
     "syntax_dependency_metrics" : "default",
-    "syntax_dependency_tree": "default",
-
-    "negation": "default"
+    "syntax_dependency_tree": "default"
   },
   "cluster" : {
     "t-sne": {

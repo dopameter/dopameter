@@ -228,13 +228,9 @@ class Corpus:
             self.emotion['features'] = {feat: 0 for feat in self.features['emotion']}
             self.emotion['sum_emotions_words'] = 0
 
-        if 'semantic_relations_wiktionary' in features.keys():
-            self.features['semantic_relations_wiktionary'] = {}
-
         if ('wordnet_synsets' in features.keys() or
             'wordnet_senses' in features.keys() or
             'wordnet_semantic_relations' in features.keys()
-
         ):
             if self.lang not in ConfLanguages().wordnet_languages:
                 sys.exit('WordNet is not configured or installed. Check your config file and your installation.')
