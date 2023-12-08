@@ -1,6 +1,10 @@
 # -*- encoding: utf-8 -*-
 """
 Various visualization tools.
+
+This code is derived from the framework 'PyDelta': https://github.com/cophi-wue/pydelta
+It is modified for the usage in DOPA METER.
+
 """
 
 import logging

@@ -1,3 +1,0 @@
-document,is_alpha,is_ascii,is_digit,is_lower,is_upper,is_title,is_punct,is_left_punct,is_right_punct,is_space,is_bracket,is_quote,is_currency,like_url,like_num,like_email,is_oov,is_stop
-Albers.txt,1174,1433,11,755,9,438,183,19,18,84,37,0,0,2,42,0,1534,495
-Amanda_Alzheimer.txt,663,1177,36,396,63,281,274,23,26,114,49,0,0,1,92,0,1248,180

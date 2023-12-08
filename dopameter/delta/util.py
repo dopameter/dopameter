@@ -180,11 +180,8 @@ class DocumentDescriber:
         the first ``_``.
         """
 
-        print(document_name)
-        print(document_name.split('_'))
-
-        #return document_name.split('_')[1] # alter code
-        return document_name#.split('_')
+        #return document_name.split('_')[1] # original code line from pydelta framework
+        return document_name
 
     def group_label(self, document_name):
         """

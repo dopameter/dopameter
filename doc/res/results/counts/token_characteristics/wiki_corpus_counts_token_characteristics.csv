@@ -1,3 +1,0 @@
-document,is_alpha,is_ascii,is_digit,is_lower,is_upper,is_title,is_punct,is_left_punct,is_right_punct,is_space,is_bracket,is_quote,is_currency,like_url,like_num,like_email,is_oov,is_stop
-Koronarthrombose.txt,39,99,0,17,4,24,44,20,24,6,32,8,0,0,0,0,100,19
-Olfaktorischer Neglect.txt,46,102,0,16,6,28,35,14,14,11,22,4,0,0,0,0,108,12

@@ -6,6 +6,10 @@ class which represents the feature matrix. Also contained are default
 implementations for reading and tokenizing files and creating a feature vector
 out of that.
 out of that.
+
+This code is derived from the framework 'PyDelta': https://github.com/cophi-wue/pydelta
+It is modified for the usage in DOPA METER.
+
 """
 import json
 import os
@@ -247,23 +251,12 @@ class FeatureGenerator:
         dataframe will be sorted according to the `sort` attribute.
         """
 
-        #print(list_of_ngram_files)
-        #corpora = {}
-        #for file in list_of_ngram_files:
-        #    with open(list_of_ngram_files[file], encoding='utf-8') as json_file:
-        #        corpora[file] = json.load(json_file)
-        #df = pd.DataFrame(corpora).transpose().fillna(0)
-        #df.index.name = 'corpus'
-        #print(df)
-        #return df
-
         data = self.process_directory(directory)
         if self.sparse:
             dtype = pd.SparseDtype(pd.Int64Dtype, pd.NA)
         else:
             dtype = pd.Int64Dtype
 
-        # df = pd.DataFrame.from_dict(data, orient='index', dtype=dtype) # orig. code line
         df = pd.DataFrame(data).transpose()
 
         if self.sort:
@@ -441,8 +434,6 @@ class Corpus(pd.DataFrame):
             if isinstance(corpus, Corpus):
                 metadata.update(corpus.metadata)
             elif not isinstance(corpus, pd.DataFrame):
-
-                print(df)
 
                 df = pd.DataFrame(df)
         else:

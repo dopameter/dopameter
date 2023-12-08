@@ -1,3 +1,0 @@
-corpus,is_alpha,is_ascii,is_bracket,is_currency,is_digit,is_left_punct,is_lower,is_oov,is_punct,is_quote,is_right_punct,is_space,is_stop,is_title,is_upper,like_email,like_num,like_url
-gra,1837,2610,86,0,47,42,1151,2782,457,0,44,198,675,719,72,0,134,3
-wiki,85,201,54,0,0,34,33,208,79,12,38,17,31,52,10,0,0,0

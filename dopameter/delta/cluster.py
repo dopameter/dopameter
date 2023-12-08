@@ -8,6 +8,10 @@ by :class:`FlatClustering`.
 
 If supported by the installed version of scikit-learn, there is also a
 KMedoidsClustering.
+
+This code is derived from the framework 'PyDelta': https://github.com/cophi-wue/pydelta
+It is modified for the usage in DOPA METER.
+
 """
 
 import logging
@@ -141,7 +145,6 @@ class FlatClustering:
         4. sum of each cluster's errors = result
         """
 
-        print("self.data.groupby(Cluster)")
         print(self.data)
         print((self.data.groupby("Cluster").agg(self.ngroups)))
 

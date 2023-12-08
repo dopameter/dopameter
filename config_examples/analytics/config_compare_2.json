@@ -1,0 +1,51 @@
+{
+  "corpora": {
+    "ASSESS_DE": {
+      "path_text_data": "/home/chlor/data/de/clinical/ASSESS_DE/",
+      "language": "de",
+      "file_formats": ["txt"],
+      "collection": "de.Clin"
+    },
+    "BRONCO150": {
+      "path_text_data": "/home/chlor/data/de/clinical/BRONCO150/",
+      "language": "de",
+      "file_formats": ["txt"],
+      "collection": "de.Clin"
+    },
+    "GraSCCo": {
+      "path_text_data": "/home/chlor/data/de/clinical/GraSCCo/",
+      "language": "de",
+      "collection": "de.Clin"
+    },
+    "PubMed": {
+      "path_text_data": "/home/chlor/data/usecase/de/PubMed_Abstracts/",
+      "language": "de",
+      "collection": "de.PubMed"
+    }
+  },
+  "settings": {
+    "tasks": ["features", "counts", "corpus_characteristics", "compare"],
+    "store_sources": true,
+    "file_format_features": ["csv"],
+    "file_format_clustering": "csv",
+    "file_format_plots": ["png", "svg"],
+    "file_format_dicts": "txt",
+    "boxplot_height": 5,
+    "most_frequent_words": 2000
+  },
+  "output": {
+      "path_features":        "/home/chlor/data/output_dopameter/usecase/features",
+      "path_features_detail": "/home/chlor/data/output_dopameter/usecase/features_detail",
+      "path_summary":         "/home/chlor/data/output_dopameter/usecase/summary",
+      "path_compare":         "/home/chlor/data/output_dopameter/usecase/compare",
+      "path_counts":          "/home/chlor/data/output_dopameter/usecase/counts",
+      "path_sources":         "/home/chlor/data/output_dopameter/usecase/sources",
+      "path_clusters":        "/home/chlor/data/output_dopameter/usecase/clusters"
+    },
+  "features": {
+    "ngrams": [1, 2 ,3]
+  },
+  "compare": [
+    "bleu"
+  ]
+}

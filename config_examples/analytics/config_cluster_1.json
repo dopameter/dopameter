@@ -1,0 +1,154 @@
+{
+  "corpora": {
+    "ASSESS_DE": {
+      "path_text_data": "/home/chlor/data/de/clinical/ASSESS_DE/",
+      "language": "de",
+      "file_formats": ["txt"],
+      "collection": "de.Clin"
+    },
+    "BRONCO150": {
+      "path_text_data": "/home/chlor/data/de/clinical/BRONCO150/",
+      "language": "de",
+      "file_formats": ["txt"],
+      "collection": "de.Clin"
+    },
+    "cardio:DE": {
+      "path_text_data": "/home/chlor/data/de/clinical/cardioDE/",
+      "language": "de",
+      "collection": "de.Clin"
+    },
+    "Ex4CDS": {
+      "path_text_data": "/home/chlor/data/usecase/de/Clinical_Documents_2/ex4cds/",
+      "language": "de",
+      "collection": "de.Clin"
+    },
+    "JSynCC": {
+      "path_text_data": "/home/chlor/data/usecase/de/Clinical_Documents_2/jsyncc-1-op/",
+      "language": "de",
+      "collection": "de.Clin"
+    },
+    "GraSCCo": {
+      "path_text_data": "/home/chlor/data/de/clinical/GraSCCo/",
+      "language": "de",
+      "collection": "de.Clin"
+    },
+    "X-ray": {
+      "path_text_data": "/home/chlor/data/de/clinical/Radiology_Reports_Distal_Fibula/",
+      "language": "de",
+      "collection": "de.Clin"
+    },
+    "Technical_Laymen": {
+      "path_text_data": "/home/chlor/data/de/clinical/Technical_Laymen/",
+      "language": "de",
+      "collection": "de.SocMed"
+    },
+    "PubMed": {
+      "path_text_data": "/home/chlor/data/usecase/de/PubMed_Abstracts/",
+      "language": "de",
+      "collection": "de.PubMed"
+    },
+    "Wikipedia_ICD-10": {
+      "path_text_data": "/home/chlor/data/de/clinical/Wikipedia_ICD-10/",
+      "language": "de",
+      "collection": "de.Wiki"
+    },
+    "i2b2_2006": {
+      "path_text_data": "/home/chlor/data/en/i2b2_2006/",
+      "language": "en",
+      "file_formats": ["txt"],
+      "collection": "en.Clin"
+    },
+    "i2b2_2008": {
+      "path_text_data": "/home/chlor/data/en/i2b2_2008/",
+      "language": "en",
+      "file_formats": ["txt"],
+      "collection": "en.Clin"
+    },
+    "i2b2_2009": {
+      "path_text_data": "/home/chlor/data/en/i2b2_2009/",
+      "language": "en",
+      "collection": "en.Clin",
+      "file_formats": [""]
+    },
+    "i2b2_2010": {
+      "path_text_data": "/home/chlor/data/en/i2b2_2010/",
+      "language": "en",
+      "collection": "en.Clin"
+    },
+    "i2b2_2012": {
+      "path_text_data": "/home/chlor/data/en/i2b2_2012/",
+      "language": "en",
+      "collection": "en.Clin"
+    },
+    "i2b2_2014": {
+      "path_text_data": "/home/chlor/data/en/i2b2_2014/",
+      "language": "en",
+      "collection": "en.Clin"
+    },
+    "n2c2_2018": {
+      "path_text_data": "/home/chlor/data/en/n2c2_2018/all/",
+      "language": "en",
+      "collection": "en.Clin"
+    },
+    "BEAR": {
+      "path_text_data": "/home/chlor/data/en/BEAR/",
+      "language": "en",
+      "collection": "en.SocMed"
+    },
+    "BioClaim": {
+      "path_text_data": "/home/chlor/data/en/BioClaim/",
+      "language": "en",
+      "collection": "en.SocMed"
+    },
+    "CoVERT": {
+      "path_text_data": "/home/chlor/data/en/CoVERT/",
+      "language": "en",
+      "collection": "en.SocMed"
+    }
+  },
+  "settings": {
+    "tasks": ["cluster", "plot"],
+    "store_sources": true,
+    "file_format_features": ["csv"],
+    "file_format_clustering": "csv",
+    "file_format_plots": ["png", "svg"],
+    "file_format_dicts": "txt",
+    "boxplot_height": 5,
+    "most_frequent_words": 2000
+  },
+  "output": {
+      "path_features":        "/home/chlor/data/output_dopameter/usecase/features",
+      "path_features_detail": "/home/chlor/data/output_dopameter/usecase/features_detail",
+      "path_summary":         "/home/chlor/data/output_dopameter/usecase/summary",
+      "path_compare":         "/home/chlor/data/output_dopameter/usecase/compare",
+      "path_counts":          "/home/chlor/data/output_dopameter/usecase/counts",
+      "path_sources":         "/home/chlor/data/output_dopameter/usecase/sources",
+      "path_clusters":        "/home/chlor/data/output_dopameter/usecase/clusters"
+    },
+  "features": {
+    "token_characteristics": "default",
+    "lexical_diversity": "default",
+    "surface": "default",
+    "syntax_dependency_metrics" : "default",
+    "syntax_dependency_tree": "default",
+    "wordnet_semantic_relations": "default",
+    "emotion": "default"
+  },
+    "cluster" : {
+    "t-sne": {
+      "n_components": 2,
+      "random_state": 1,
+      "perplexity": 100,
+      "learning_rate": 500,
+      "init": "pca",
+      "eps": 2,
+      "min_samples": 5
+    },
+    "k-means": {
+      "n_clusters": 5,
+      "random_state": "None",
+      "n_init": 50,
+      "max_iter": 300
+    }
+  }
+}

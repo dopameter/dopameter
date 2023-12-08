@@ -24,15 +24,17 @@ class ConfLanguages:
 
     def __init__(self):
 
-        self.config_lang = json.load(
-
+        json_file = (
             open(
                 os.path.join(os.sep.join(os.path.abspath(__file__).split(os.sep)[:-4]),
                 'ext_res',
                 'installation',
                 'config_lang.json')
                 )
-        )
+            )
+
+        self.config_lang = json.load(json_file)
+        json_file.close()
 
         self.spacy_languages = self.config_lang['spacy_languages']
         self.benepar_languages = self.config_lang['benepar_languages']
@@ -41,6 +43,18 @@ class ConfLanguages:
         self.heideltime_languages = self.config_lang['heideltime_languages']
 
     def install_language_model(self, lang):
+        """Installation of a spaCy based language mode
+
+        Parameters
+        ----------
+        lang: str
+
+        Notes
+        -----
+        This method download spaCy based language models from the spaCy homepage.
+        Check the naming of the modules before between https://spacy.io/models and res/config_lang.json
+        """
+
         logging.info('\t language model')
         if lang in self.spacy_languages.keys():
             os.system('python -m spacy download ' + self.spacy_languages[lang])

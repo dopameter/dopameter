@@ -10,7 +10,10 @@ from dopameter.configuration.installation import ConfLanguages
 
 
 class PreProcessingPipline:
-    def __init__(self):
+    def __init__(
+            self,
+            config={}
+    ):
 
         self.config_lang = json.load(open(os.path.join(os.sep.join(
             os.path.abspath(__file__).split(os.sep)[:-4]),
@@ -20,6 +23,7 @@ class PreProcessingPipline:
         )
 
         self.spacy_languages = self.config_lang['spacy_languages']
+        self.config = config
 
     def _get_tokens(self, span):
         """Get tokens as list
@@ -34,6 +38,20 @@ class PreProcessingPipline:
         """
 
         return [tok.text for tok in span if not re.match(r'\s+', tok.text)]
+
+    def _get_pos(self, span):
+        """Get lemma as list
+
+        Parameters
+        ----------
+        span : spaCy span
+
+        Returns
+        -------
+        array of string
+        """
+
+        return [tok.pos_ for tok in span if not re.match(r'\s+', tok.text)]
 
     def _get_n_tokens(self, span):
         """Get the number of tokens in span
@@ -53,7 +71,7 @@ class PreProcessingPipline:
 
         Parameters
         ----------
-        span : spaCy span
+        doc : spaCy doc
 
         Returns
         -------
@@ -66,11 +84,11 @@ class PreProcessingPipline:
 
         Parameters
         ----------
-        span : spaCy span
+        doc : spaCy doc
 
         Returns
         -------
-        int
+        set
         """
         return set([sent.text for sent in doc.sents])
 
@@ -163,10 +181,8 @@ class PreProcessingPipline:
             number of words of a document with filtered punctuation and
             words that start with apostrophe (aka contractions)
         """
-        filtered_words = [
-            word for word in doc if not word.is_punct and "'" not in word.text
-        ]
-        return len(filtered_words)
+
+        return len([word for word in doc if not word.is_punct and "'" not in word.text])
 
     def _get_cnt_syllables(self, doc, min_syllables: int = 1):
         """Get number of polysyllables by a given minimal syllable size.
@@ -203,7 +219,7 @@ class PreProcessingPipline:
         """
 
         if lang in self.spacy_languages.keys():
-            logging.info("Create spaCy nlp module [" + self.spacy_languages[lang] + "] for language '" + self.config_lang['spacy_languages_def'][lang] + "' [" + lang + "]")
+            logging.info("Create spaCy nlp module '" + self.spacy_languages[lang] + "' for language '" + self.config_lang['spacy_languages_def'][lang] + "' (" + lang + ")")
             nlp = spacy.load(ConfLanguages().spacy_languages[lang])
 
             if not Doc.has_extension('tokens'):
@@ -251,16 +267,25 @@ class PreProcessingPipline:
             if not Span.has_extension('cnt_words'):
                 Span.set_extension('cnt_words', getter=self._get_cnt_words)
 
-            if not Doc.has_extension('cnt_syllables'):
-                Doc.set_extension('cnt_syllables', getter=self._get_cnt_syllables)
-            if not Span.has_extension('cnt_syllables'):
-                Span.set_extension('cnt_syllables', getter=self._get_cnt_syllables)
+            if 'features' in self.config.keys():
+                if 'surface' in self.config['features'].keys():
+                    if not Doc.has_extension('cnt_syllables'):
+                        Doc.set_extension('cnt_syllables', getter=self._get_cnt_syllables)
+                    if not Span.has_extension('cnt_syllables'):
+                        Span.set_extension('cnt_syllables', getter=self._get_cnt_syllables)
 
-            if not Doc.has_extension('cnt_poly_syllables'):
-                Doc.set_extension('cnt_poly_syllables', getter=self._get_cnt_poly_syllables)
-            if not Span.has_extension('cnt_poly_syllables'):
-                Span.set_extension('cnt_poly_syllables', getter=self._get_cnt_poly_syllables)
+                    if not Doc.has_extension('cnt_poly_syllables'):
+                        Doc.set_extension('cnt_poly_syllables', getter=self._get_cnt_poly_syllables)
+                    if not Span.has_extension('cnt_poly_syllables'):
+                        Span.set_extension('cnt_poly_syllables', getter=self._get_cnt_poly_syllables)
+
+            if 'settings' in self.config.keys():
+                if 'mode_ngrams' in self.config['settings'].keys() and self.config['settings']['mode_ngrams'] == 'pos':
+                    if not Doc.has_extension('pos_tags'):
+                        Doc.set_extension('pos_tags', getter=self._get_pos)
+                    if not Span.has_extension('pos_tags'):
+                        Span.set_extension('pos_tags', getter=self._get_pos)
 
             return nlp
         else:
-            sys.exit('Your language', self.spacy_languages, 'is not supported. Check your config file.')
+            sys.exit('Your configured language ' + self.spacy_languages + ' is not supported. Check your config file.')

@@ -1,5 +1,9 @@
 """
 Feature selection utilities.
+
+This code is derived from the framework 'PyDelta': https://github.com/cophi-wue/pydelta
+It is modified for the usage in DOPA METER.
+
 """
 
 
