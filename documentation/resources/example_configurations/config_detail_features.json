@@ -1,0 +1,46 @@
+{
+  "corpora": {
+    "gra": {
+      "path_text_data": "/resources/example_corpora/gra",
+      "language": "de"
+    },
+    "wiki": {
+      "path_text_data": "/resources/example_corpora/wiki",
+      "language": "de"
+    }
+  },
+  "settings": {
+    "tasks": ["features_detail", "plot"],
+    "store_sources": true,
+    "file_format_features": ["csv"],
+    "file_format_clustering": "csv",
+    "file_format_plots": ["png"],
+    "file_format_dicts": "txt",
+    "boxplot_height": 3,
+    "most_frequent_words": 2000
+  },
+  "output": {
+      "path_features":        "/resources/results/features",
+      "path_features_detail": "/resources/results/features_detail",
+      "path_summary":         "/resources/results/summary",
+      "path_compare":         "/resources/results/compare",
+      "path_counts":          "/resources/results/counts",
+      "path_sources":         "/resources/results/sources",
+      "path_clusters":        "/resources/results/clusters"
+    },
+  "features": {
+    "token_characteristics": "default",
+    "pos": "default",
+    "ner": "default",
+
+    "surface": "default",
+    "lexical_diversity": "default",
+
+    "syntax_dependency_metrics" : "default",
+    "syntax_constituency_metrics" : "default",
+
+    "wordnet_semantic_relations": "default",
+
+    "emotion": "default"
+  }
+}

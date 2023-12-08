@@ -1,0 +1,3 @@
+document,sem_rich_synonyms,sem_rich_taxonyms,sem_rich_hyponyms,sem_rich_meronyms,sem_rich_holonyms,sem_depth_min,sem_depth_max,synsets_avg,senses_avg,sem_rich_antonyms
+Koronarthrombose.txt,1.1170213,0.29787233,5.393617,0.021276595,0.08510638,0.1875,0.1875,0.17021276,0.17021276,
+Olfaktorischer Neglect.txt,1.6701031,0.31958762,6.2783504,,0.082474224,0.37931034,0.37931034,0.29896906,0.29896906,0.082474224

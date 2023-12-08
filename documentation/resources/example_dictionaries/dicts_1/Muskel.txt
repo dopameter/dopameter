@@ -1,0 +1,28 @@
+Musculus adductor longus
+Musculus adductor magnus
+Musculus adductor pollicis
+Musculus anconeus
+Musculus auricularis anterior
+Musculus auricularis posterior
+Musculus auricularis superior
+Musculus biceps brachii
+Musculus biceps femoris
+Musculus brachialis
+Musculus brachiocephalicus
+Musculus brachioradialis
+Musculus buccinator
+Musculus bulbospongiosus
+Musculus chondroglossus
+Musculus coccygeus
+Musculus constrictor pharyngis inferior
+Musculus constrictor pharyngis medius
+Musculus constrictor pharyngis superior
+Musculus coracobrachialis
+Musculus corrugator supercilii
+Musculus cremaster
+Musculus deltoideus
+Musculus depressor anguli oris
+Musculus depressor labii inferioris
+Musculus depressor septi nasi
+Musculus depressor supercilii
+Musculus detrusor vesicae
