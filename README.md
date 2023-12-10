@@ -22,7 +22,7 @@
 
 ----
 
-# DOPA METER - A Tool Suite for the Metrical Document Profiling and Aggreation
+# DOPA METER - A Tool Suite for the Metrical Document Profiling and Aggregation
 
 This is _DOPA METER_ - a tool suite that subsumes a wide range of established metrics of text analysis under one coverage.
 It is based on [Python 3](https://www.python.org/) and [spaCy](https://spacy.io/).
