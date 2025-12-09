@@ -110,7 +110,7 @@ class ConfLanguages:
                 logging.info("Check the path " + emotion_file + " and your defined language.")
                 return -1
         else:
-            logging.info(em_target_file, 'already exists.')
+            logging.info('%s already exists.', em_target_file)
             return 0
 
     def install_all_possible_language_modules(self, lang):

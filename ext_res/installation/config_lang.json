@@ -21,7 +21,8 @@
                 "mk": "mk_core_news_sm",
                 "hr": "hr_core_news_sm",
                 "fi": "fi_core_news_sm",
-                "ko": "mk_core_news_sm"
+                "ko": "mk_core_news_sm",
+                "sv": "sv_core_news_sm" 
         },
 
                 "spacy_languages_def":
@@ -45,7 +46,8 @@
                 "ca": "Catalan",
                 "hr": "Croatian",
                 "fi": "Finnish",
-                "ko": "Korean"
+                "ko": "Korean",
+                "sv": "Swedish"
         },
 
         "benepar_languages":
