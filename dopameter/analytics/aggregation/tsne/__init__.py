@@ -25,7 +25,6 @@ def create_plots_tsne(
         labels,
         feat_name,
         path_tsne_feat,
-        #db_scan_clusters,
         plot_config,
         n_items,
         file_format_plots
@@ -221,7 +220,6 @@ def create_plots_tsne(
     plt.close('all')
 
 
-# TODO umbenennen, das Cluster ist DBSCAN
 class ClusterDBSCAN(ClusterCorpora):
 
     """Get Aggregation and Clustering by T-SNE based plotting

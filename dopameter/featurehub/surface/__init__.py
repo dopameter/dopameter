@@ -409,10 +409,6 @@ class SurfaceFeaturizes:
         if 'flesch_reading_ease' in self.features:
             self.features.remove('flesch_reading_ease')
 
-        #data['surface']['toks_min_three_syllables'] = collections.Counter(toks_min_three_syllables)
-        #data['surface']['toks_larger_six_letters'] = collections.Counter(toks_larger_six_letters)
-        #data['surface']['toks_one_syllable'] = collections.Counter(toks_one_syllable)
-
         data['surface']['token_len_chars'] = token_len_chars
         data['surface']['sent_len_tokens'] = sent_len_tokens
         data['surface']['sent_len_chars'] = sent_len_chars
@@ -541,11 +537,6 @@ def init_surface():
         'sent_len_tokens': [],
         'sent_len_chars': [],
 
-        #'toks_min_three_syllables': collections.Counter(),
-        #'toks_larger_six_letters': collections.Counter(),
-        #'toks_one_syllable': collections.Counter(),
-        #'tokens_stats': collections.Counter(),
-
         'cnt_toks_min_three_syllables': 0,
         'cnt_toks_larger_six_letters': 0,
         'cnt_toks_one_syllable': 0,
@@ -559,14 +550,13 @@ def init_surface():
         'syllables_per_word': [],
         'sent_lenghts': [],
         'cnt_pos': Counter({}),
-        #'segments': [],
+
         'forcast_values': [],
         'cnt_diff_words': 0,
 
         'syllables': Counter({}),
         'words_poly_syllables': Counter({}),
-        #'letter_tokens': Counter({}),
-        #'no_punct_tokens': Counter({}),
+
         'sentences': Counter({})
     }
 
@@ -579,12 +569,7 @@ def update_surface(surface, data):
         surface['sent_len_tokens'] += data['sent_len_tokens']
     if 'sent_len_chars' in data.keys():
         surface['sent_len_chars'] += data['sent_len_chars']
-    #if 'toks_min_three_syllables' in data.keys():
-    #    surface['toks_min_three_syllables'].update(data['toks_min_three_syllables'])
-    #if 'toks_larger_six_letters' in data.keys():
-    #    surface['toks_larger_six_letters'].update(data['toks_larger_six_letters'])
-    #if 'toks_one_syllable' in data.keys():
-    #    surface['toks_one_syllable'].update(data['toks_one_syllable'])
+
 
     if 'cnt_toks_min_three_syllables' in data.keys():
         surface['cnt_toks_min_three_syllables'] += data['cnt_toks_min_three_syllables']
@@ -606,8 +591,7 @@ def update_surface(surface, data):
 
     if 'cnt_pos' in data.keys():
         surface['cnt_pos'] += data['cnt_pos']
-    #if 'segments' in data.keys():
-    #    surface['segments'].extend(data['segments'])
+
     if 'forcast_values' in data.keys():
         surface['forcast_values'] += data['forcast_values']
 
@@ -615,19 +599,6 @@ def update_surface(surface, data):
         surface['tokens_stats'].update(data['tokens_stats'])
     if 'syllables' in data.keys():
         surface['syllables'].update(data['syllables'])
-    #if 'letter_tokens' in data.keys():
-    #    surface['letter_tokens'].update(data['letter_tokens'])
-    #if 'no_punct_tokens' in data.keys():
-    #    surface['no_punct_tokens'].update(data['no_punct_tokens'])
-    #if 'sentences' in data.keys():  # TODO muss das sein? --> schon weg
-    #    surface['sentences'].update(data['sentences'])
 
-        # only DE
-    #if 'syllables_per_word' in data.keys():
-    #    surface['syllables_per_word'] += data['syllables_per_word']
-    #if 'sent_lenghts' in data.keys():
-    #    surface['sent_lenghts'] += data['sent_lenghts']
-    #if 'toks_larger_six_letters' in data.keys():
-    #    surface['toks_larger_six_letters'] += data['toks_larger_six_letters']
 
     return surface
