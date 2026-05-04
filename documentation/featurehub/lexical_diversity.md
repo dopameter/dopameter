@@ -17,8 +17,8 @@
   * Metrics that use sample size and vocabulary size
     * `type_token_ratio`: Typical Type Token Ratio $\frac{V(N)}{N}$
     * `function words`: tokens with Part-of-Speech tag in ['VERB', 'AUX', 'ADJ', 'NOUN', 'PRON', 'ADJ'] (only as 'count', no 'metric')
-    * `lexical density`: $\Sum_{function_words}*100$ / N
-    * `guiraud_r`: $R = \frac{V(N)}{N}\$ (Guiraud, 1954)
+    * `lexical density`: $\frac{\left(\sum_{function_words}*100\right)}{N}$
+    * `guiraud_r`: $R = \frac{V(N)}{N}$ (Guiraud, 1954)
     * `herdan_c`: $C = \frac{V(N)}{\sqrt{N}}$ (Herdan, 1960 & 1964)
     * `dugast_k`: $\frac{\log(V(N))}{\log(\log(N))}$ (Dugast, 1979)
     * `maas_a2`: $A² = \frac{\log(N) - \log(V(N))}{\log(N)^2}$ (Maas, 1972)
@@ -39,7 +39,7 @@
     * `yule_k`: $K = 10^4 \left(-\frac{1}{N} + \sum_{i=1}^N V(i, N) \left( \frac{i}{N}\right)^2 \right)$ (Yule, 1944)
     * `simpson_d`: $D = \sum_{i=1}^{V(N)} V(i, N) \frac{i}{N} \frac{i - 1}{N - 1}$ (Simpson, 1949)
     * `herdan_vm`: $V_m = \sqrt{-\frac{1}{V(N)} + \sum_{i=1}^{V(N)} V(i, N) \left(\frac{i}{N}\right)^2}$ (Herdan, 1955)
-    * `hdd`: $HD-D = \sum_{i=1}^{V(N)} \frac{1}{42} \left(1 - \frac{\binom{i}{0} \binom{N - V(i, N)}{42 - 0}}{\binom{N}{42}}\right) = \sum_{i=1}^{V(N)} \frac{1}{42} (1 - \frac{\binom{N - V(i, N)}{42}}{\binom{N}{42}})$" (McCarthy and Jarvis, 2010, see https://link.springer.com/content/pdf/10.3758/BRM.42.2.381.pdf)
+    * `hdd`: $HD-D = \sum_{i=1}^{V(N)} \frac{1}{42} \left(1 - \frac{\binom{i}{0} \binom{N - V(i, N)}{42 - 0}}{\binom{N}{42}}\right) = \sum_{i=1}^{V(N)} \frac{1}{42} \left(1 - \frac{\binom{N - V(i, N)}{42}}{\binom{N}{42}}\right)$ (McCarthy and Jarvis, 2010, see https://link.springer.com/content/pdf/10.3758/BRM.42.2.381.pdf)
     * `evenness`: derivated from Pielou's Evenness
     * `mattr`: Moving-Average Type-Token Ratio (Covington and McFall, 2010)
     * `mtld`: McCarthy and Jarvis (2010) measure of textual lexical diversity, see https://link.springer.com/content/pdf/10.3758/BRM.42.2.381.pdf

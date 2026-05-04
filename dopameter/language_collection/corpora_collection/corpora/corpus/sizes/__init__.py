@@ -8,6 +8,7 @@ class Sizes:
         self.characters = 0
         self.sentences_cnt = 0
         self.tokens_cnt = 0
+        self.documents_cnt = 0
 
     def update_sizes_by_data(self, data):
 
@@ -15,9 +16,10 @@ class Sizes:
         self.lemmata.update(data['lemmata'])
         self.sentences.update(data['different_sentences'])
 
-        self.characters += data['characters_cnt']
+        self.characters    += data['characters_cnt']
         self.sentences_cnt += data['sentences_cnt']
-        self.tokens_cnt += data['tokens_cnt']
+        self.tokens_cnt    += data['tokens_cnt']
+        self.documents_cnt += 1
 
     def update_sizes_by_corpus_scores(self, sizes):
 
@@ -25,6 +27,7 @@ class Sizes:
         self.lemmata.update(sizes.lemmata)
         self.sentences.update(sizes.sentences)
 
-        self.characters += sizes.characters
+        self.characters    += sizes.characters
         self.sentences_cnt += sizes.sentences_cnt
-        self.tokens_cnt += sizes.tokens_cnt
+        self.tokens_cnt    += sizes.tokens_cnt
+        self.documents_cnt += sizes.documents_cnt

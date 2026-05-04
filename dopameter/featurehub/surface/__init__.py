@@ -1,4 +1,5 @@
 import collections
+import math
 from collections import Counter
 from math import sqrt
 import numpy as np
@@ -83,7 +84,7 @@ class SurfaceFeaturizes:
           "toks_one_syllable",
           "syllables",
           "letter_tokens",
-          "no_digit_tokens",
+          "no_punct_tokens",
           "avg_token_len_chars",
           "avg_sent_len_tokens",
           "avg_sent_len_chars",
@@ -191,27 +192,34 @@ class SurfaceFeaturizes:
             sent_to_words = (cnt_sentences / cnt_words) * 100
             return 0.0588 * letters_to_words - 0.296 * sent_to_words - 15.8
 
-    def ari(self, cnt_sentences, cnt_words, cnt_no_digit_tokens):
+    def ari(self, cnt_sentences, cnt_words, cnt_no_punct_tokens):
         """Get the Automated Readability Index of a document (Senter and Smith, 1967)
+
+        The formula for calculating the automated readability index is given below:
+        = 4,71 \frac{characters}{words} + 0.5 \frac{words}{sentences} - 21,43
+
+        characters: number of letters and numbers
+        words: is the number of spaces
+        sentences: is the number of sentences
 
         Parameters
         ----------
         cnt_sentences : number of sentences (int)
         cnt_words : number of words (int)
-        cnt_no_digit_tokens : amount of words without punctuations (int)
+        cnt_no_punct_tokens : amount of words without punctuations (int)
 
         Returns
         -------
         int
-            Coleman-Liau index of a document
+            Automated readability index of a document, a corpus or a collection
         """
 
         if cnt_words <= 0 or cnt_sentences <= 0:
             return 0
         else:
-            letter_to_words = cnt_no_digit_tokens / cnt_words
+            letter_to_words = cnt_no_punct_tokens / cnt_words
             words_to_sents = cnt_words / cnt_sentences
-            return 4.71 * letter_to_words + 0.5 * words_to_sents - 21.43
+            return math.ceil(4.71 * letter_to_words + 0.5 * words_to_sents - 21.43)
 
     def forcast(self, cnt_words, segments):
         """Get FORCAST readablilty score (US military, Caylor and Sticht, 1973)
@@ -228,7 +236,7 @@ class SurfaceFeaturizes:
         """
 
         if cnt_words < 150:
-            return 0
+            return 0, []
         else:
             forcast_values = []
             for seg in segments:
@@ -239,9 +247,9 @@ class SurfaceFeaturizes:
                 forcast_values.append(20 - (mono_syllabic / 10))
 
             if forcast_values:
-                return np.mean(forcast_values)
+                return (np.mean(forcast_values), forcast_values)
             else:
-                return 0
+                return 0, []
 
     def gunning_fog(self, cnt_sentences, cnt_words, syllables_per_word):
         """Get Gunning fog index (Robert Guning, 1952)
@@ -345,7 +353,7 @@ class SurfaceFeaturizes:
 
         cnt_sentences = len(list(doc.sents))
         cnt_letter_tokens = sum([len(token) for token in doc if not token.is_punct and not token.is_digit])
-        cnt_no_digit_tokens = sum([len(token) for token in doc if not token.is_punct])
+        cnt_no_punct_tokens = sum([len(token) for token in doc if not token.is_punct])
 
         syllables_per_word = [0 if s is None else s for s in [token._.syllables_count for token in doc]]
 
@@ -372,7 +380,7 @@ class SurfaceFeaturizes:
             data['features']['coleman_liau'] = self.coleman_liau(cnt_sentences, doc._.cnt_words, cnt_letter_tokens)
 
         if 'ari' in self.features:
-            data['features']['ari'] = self.ari(cnt_sentences, doc._.cnt_words, cnt_no_digit_tokens)
+            data['features']['ari'] = self.ari(cnt_sentences, doc._.cnt_words, cnt_no_punct_tokens)
 
         temp = []
         segments = []
@@ -401,9 +409,9 @@ class SurfaceFeaturizes:
         if 'flesch_reading_ease' in self.features:
             self.features.remove('flesch_reading_ease')
 
-        data['surface']['toks_min_three_syllables'] = collections.Counter(toks_min_three_syllables)
-        data['surface']['toks_larger_six_letters'] = collections.Counter(toks_larger_six_letters)
-        data['surface']['toks_one_syllable'] = collections.Counter(toks_one_syllable)
+        #data['surface']['toks_min_three_syllables'] = collections.Counter(toks_min_three_syllables)
+        #data['surface']['toks_larger_six_letters'] = collections.Counter(toks_larger_six_letters)
+        #data['surface']['toks_one_syllable'] = collections.Counter(toks_one_syllable)
 
         data['surface']['token_len_chars'] = token_len_chars
         data['surface']['sent_len_tokens'] = sent_len_tokens
@@ -412,8 +420,8 @@ class SurfaceFeaturizes:
         data['surface']['cnt_syllables'] = doc._.cnt_syllables
         data['surface']['cnt_words'] = doc._.cnt_words
         data['surface']['cnt_poly_syllables'] = doc._.cnt_poly_syllables
-        data['surface']['cnt_letter_tokens'] = cnt_letter_tokens
-        data['surface']['cnt_no_digit_tokens'] = cnt_no_digit_tokens
+        #data['surface']['cnt_letter_tokens'] = cnt_letter_tokens
+        #data['surface']['cnt_no_punct_tokens'] = cnt_no_punct_tokens
 
         data['surface']['syllables_per_word'] = syllables_per_word
         data['surface']['cnt_pos'] = cnt_pos
@@ -426,7 +434,7 @@ class SurfaceFeaturizes:
 
         data['counts']['syllables'] = sum(data['surface']['syllables'].values())
         data['counts']['letter_tokens'] = sum(data['surface']['letter_tokens'].values())
-        data['counts']['no_digit_tokens'] = sum(data['surface']['no_digit_tokens'].values())
+        data['counts']['no_punct_tokens'] = sum(data['surface']['no_punct_tokens'].values())
 
         return data
 
@@ -493,17 +501,20 @@ class SurfaceFeaturizes:
             )
 
         if 'coleman_liau' in self.features:
+            cnt_letter_tokens = sum([val for tok, val in dict(corpus.resources.surface['no_punct_tokens']).items() if not tok.isdigit()])
+
             data['features']['coleman_liau'] = self.coleman_liau(
                 corpus.resources.surface['cnt_sentences'],
                 corpus.resources.surface['cnt_words'],
-                corpus.resources.surface['cnt_letter_tokens']
+                #corpus.resources.surface['cnt_letter_tokens']
+                cnt_letter_tokens
             )
 
         if 'ari' in self.features:
             data['features']['ari'] = self.ari(
                 corpus.resources.surface['cnt_sentences'],
                 corpus.resources.surface['cnt_words'],
-                corpus.resources.surface['cnt_no_digit_tokens']
+                corpus.resources.surface['cnt_no_punct_tokens']
             )
 
         if 'forcast' in self.features:
@@ -530,26 +541,32 @@ def init_surface():
         'sent_len_tokens': [],
         'sent_len_chars': [],
 
-        'toks_min_three_syllables': collections.Counter(),
-        'toks_larger_six_letters': collections.Counter(),
-        'toks_one_syllable': collections.Counter(),
+        #'toks_min_three_syllables': collections.Counter(),
+        #'toks_larger_six_letters': collections.Counter(),
+        #'toks_one_syllable': collections.Counter(),
+        #'tokens_stats': collections.Counter(),
+
+        'cnt_toks_min_three_syllables': 0,
+        'cnt_toks_larger_six_letters': 0,
+        'cnt_toks_one_syllable': 0,
 
         'cnt_syllables': 0,
         'cnt_words': 0,
         'cnt_poly_syllables': 0,
         'cnt_letter_tokens': 0,
-        'cnt_no_digit_tokens': 0,
+        'cnt_no_punct_tokens': 0,
 
         'syllables_per_word': [],
         'sent_lenghts': [],
         'cnt_pos': Counter({}),
-        'segments': [],
+        #'segments': [],
+        'forcast_values': [],
         'cnt_diff_words': 0,
 
         'syllables': Counter({}),
         'words_poly_syllables': Counter({}),
-        'letter_tokens': Counter({}),
-        'no_digit_tokens': Counter({}),
+        #'letter_tokens': Counter({}),
+        #'no_punct_tokens': Counter({}),
         'sentences': Counter({})
     }
 
@@ -562,12 +579,19 @@ def update_surface(surface, data):
         surface['sent_len_tokens'] += data['sent_len_tokens']
     if 'sent_len_chars' in data.keys():
         surface['sent_len_chars'] += data['sent_len_chars']
-    if 'toks_min_three_syllables' in data.keys():
-        surface['toks_min_three_syllables'].update(data['toks_min_three_syllables'])
-    if 'toks_larger_six_letters' in data.keys():
-        surface['toks_larger_six_letters'].update(data['toks_larger_six_letters'])
-    if 'toks_one_syllable' in data.keys():
-        surface['toks_one_syllable'].update(data['toks_one_syllable'])
+    #if 'toks_min_three_syllables' in data.keys():
+    #    surface['toks_min_three_syllables'].update(data['toks_min_three_syllables'])
+    #if 'toks_larger_six_letters' in data.keys():
+    #    surface['toks_larger_six_letters'].update(data['toks_larger_six_letters'])
+    #if 'toks_one_syllable' in data.keys():
+    #    surface['toks_one_syllable'].update(data['toks_one_syllable'])
+
+    if 'cnt_toks_min_three_syllables' in data.keys():
+        surface['cnt_toks_min_three_syllables'] += data['cnt_toks_min_three_syllables']
+    if 'cnt_toks_larger_six_letters' in data.keys():
+        surface['cnt_toks_larger_six_letters'] += data['cnt_toks_larger_six_letters']
+    if 'cnt_toks_one_syllable' in data.keys():
+        surface['cnt_toks_one_syllable'] += data['cnt_toks_one_syllable']
 
     if 'cnt_syllables' in data.keys():
         surface['cnt_syllables'] += data['cnt_syllables']
@@ -577,29 +601,33 @@ def update_surface(surface, data):
         surface['cnt_poly_syllables'] += data['cnt_poly_syllables']
     if 'cnt_letter_tokens' in data.keys():
         surface['cnt_letter_tokens'] += data['cnt_letter_tokens']
-    if 'cnt_no_digit_tokens' in data.keys():
-        surface['cnt_no_digit_tokens'] += data['cnt_no_digit_tokens']
+    if 'cnt_no_punct_tokens' in data.keys():
+        surface['cnt_no_punct_tokens'] += data['cnt_no_punct_tokens']
 
     if 'cnt_pos' in data.keys():
         surface['cnt_pos'] += data['cnt_pos']
-    if 'segments' in data.keys():
-        surface['segments'].extend(data['segments'])
+    #if 'segments' in data.keys():
+    #    surface['segments'].extend(data['segments'])
+    if 'forcast_values' in data.keys():
+        surface['forcast_values'] += data['forcast_values']
 
+    if 'tokens_stats' in data.keys():
+        surface['tokens_stats'].update(data['tokens_stats'])
     if 'syllables' in data.keys():
         surface['syllables'].update(data['syllables'])
-    if 'letter_tokens' in data.keys():
-        surface['letter_tokens'].update(data['letter_tokens'])
-    if 'no_digit_tokens' in data.keys():
-        surface['no_digit_tokens'].update(data['no_digit_tokens'])
-    if 'sentences' in data.keys():
-        surface['sentences'].update(data['sentences'])
+    #if 'letter_tokens' in data.keys():
+    #    surface['letter_tokens'].update(data['letter_tokens'])
+    #if 'no_punct_tokens' in data.keys():
+    #    surface['no_punct_tokens'].update(data['no_punct_tokens'])
+    #if 'sentences' in data.keys():  # TODO muss das sein? --> schon weg
+    #    surface['sentences'].update(data['sentences'])
 
         # only DE
-    if 'syllables_per_word' in data.keys():
-        surface['syllables_per_word'] += data['syllables_per_word']
-    if 'sent_lenghts' in data.keys():
-        surface['sent_lenghts'] += data['sent_lenghts']
-    if 'toks_larger_six_letters' in data.keys():
-        surface['toks_larger_six_letters'] += data['toks_larger_six_letters']
+    #if 'syllables_per_word' in data.keys():
+    #    surface['syllables_per_word'] += data['syllables_per_word']
+    #if 'sent_lenghts' in data.keys():
+    #    surface['sent_lenghts'] += data['sent_lenghts']
+    #if 'toks_larger_six_letters' in data.keys():
+    #    surface['toks_larger_six_letters'] += data['toks_larger_six_letters']
 
     return surface

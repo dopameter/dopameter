@@ -566,8 +566,7 @@ class PDistDeltaFunction(DeltaFunction):
 
     def __call__(self, corpus):
         df = pd.DataFrame(index=corpus.index, columns=corpus.index,
-                          data=ssd.squareform(ssd.pdist(corpus, self.metric,
-                                                        **self.kwargs)))
+                          data=ssd.squareform(ssd.pdist(corpus, self.metric, **self.kwargs)))
         if self.scale:
             df = df / corpus.columns.size
         return self.create_result(df, corpus)
@@ -606,6 +605,7 @@ class MetricDeltaFunction(DeltaFunction):
         super().__init__(descriptor=name, name=name, title=title, register=register)
 
     def __call__(self, corpus):
+
         dm = pairwise_distances(corpus, metric=self.metric, n_jobs=-1, **self.kwargs)
         if self.fix_symmetry:
             dm = np.tril(dm, -1)

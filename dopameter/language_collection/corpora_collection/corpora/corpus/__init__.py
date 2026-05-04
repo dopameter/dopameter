@@ -62,16 +62,21 @@ class Corpus(CorporaCollection):
     def count_characteristics(self):
         """get count characteristics of a corpus"""
         return {
-            'documents':            len(self.files),
+            'documents':                            len(self.files),
 
-            'sentences':            self.sizes.sentences_cnt,
-            'different_sentences':  len(self.sizes.sentences),
+            'sentences':                            self.sizes.sentences_cnt,
+            'avg_sentences_per_doc':                round(self.sizes.sentences_cnt / len(self.files), 1),
+            'different_sentences':                  len(self.sizes.sentences),
 
-            'tokens':               self.sizes.tokens_cnt,
-            'types':                len(self.sizes.types),
-            'lemmata':              len(self.sizes.lemmata),
+            'tokens':                               self.sizes.tokens_cnt,
+            'avg_tokens_per_doc':                   round(self.sizes.tokens_cnt / len(self.files), 1),
+            #'avg_tokens_per_sentence':              round(self.sizes.tokens_cnt / self.sizes.sentences_cnt, 1),
 
-            'characters':           self.sizes.characters
+            'types':                                len(self.sizes.types),
+            'lemmata':                              len(self.sizes.lemmata),
+
+            'characters':                           self.sizes.characters,
+            'avg_characters_per_doc':               round(self.sizes.characters / len(self.files), 1)
         }
 
     def update_documents(self, doc, doc_name):
@@ -96,6 +101,10 @@ class Corpus(CorporaCollection):
                 if key not in self.counts[feature].keys():
                     self.counts[feature][key] = {}
                 self.counts[feature][key][doc_name] = data['counts'][key]
+
+            if data['counts'] == {}:
+                for key in self.counts[feature].keys():
+                    self.counts[feature][key][doc_name] = 0
 
         if 'features' in data.keys() and feature != 'basic_counts':
             for key in data['features'].keys():
@@ -193,5 +202,19 @@ def init_scores(conf_features, lang):
     if 'emotion' in conf_features.keys():
         features['emotion'] = {}
         macro_features['emotion'] = {}
+
+    #if set(conf_features.keys()).intersection({'germanet_synsets', 'germanet_lexical_units', 'germanet_word_classes', 'germanet_semantic_relations'}):
+    #    if 'germanet_semantic_relations' in conf_features.keys():
+    #        features['germanet_semantic_relations'] = {}
+    #        macro_features['germanet_semantic_relations'] = {}
+
+    #    for feat in (set(conf_features.keys())).intersection({'germanet_synsets', 'germanet_lexical_units', 'germanet_word_classes'}):
+    #        features[feat] = {}
+    #        counts[feat] = {}
+
+    #if set(conf_features.keys()).intersection({'umls_cui', 'umls_lui', 'umls_sui', 'umls_sab', 'umls_semantic_types', 'umls_semantic_groups'}):
+    #    for feat in (set(conf_features.keys())).intersection({'umls_cui', 'umls_lui', 'umls_sui', 'umls_sab', 'umls_semantic_types', 'umls_semantic_groups'}):
+    #        features[feat] = {}
+    #        counts[feat] = {}
 
     return features, macro_features, counts, Resources(conf_features=conf_features), Sizes()

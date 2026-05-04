@@ -58,7 +58,6 @@ class TokenCharacteristics:
             'like_url',
             'like_num',
             'like_email',
-            #'is_oov',
             'is_stop'
         ]
         if features == 'default':
@@ -134,9 +133,6 @@ class TokenCharacteristics:
 
         if 'like_email' in self.features:
             data['counts']['like_email'] = len([tok for tok in doc if tok.like_email])
-
-        #if 'is_oov' in self.features:
-        #    data['counts']['is_oov'] = len([tok for tok in doc if tok.is_oov and not tok.is_space])
 
         if 'is_stop' in self.features:
             data['counts']['is_stop'] = len([tok for tok in doc if tok.is_stop])

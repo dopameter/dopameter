@@ -50,14 +50,6 @@ __all__ = [ "functions",
             "TableDocumentDescriber"
             ]
 
-#__all__ = [ "Corpus", "FeatureGenerator", "LETTERS_PATTERN", "WORD_PATTERN",
-#           "functions", "Normalization", "normalization",
-#           "DeltaFunction", "PDistDeltaFunction",
-#           "MetricDeltaFunction", "CompositeDeltaFunction",
-#           "Clustering", "FlatClustering",
-#           "get_rfe_features", "Dendrogram",
-#           "compare_pairwise", "Metadata", "TableDocumentDescriber" ]
-
 try:
         from dopameter.delta.cluster import KMedoidsClustering
         __all__.append("KMedoidsClustering")

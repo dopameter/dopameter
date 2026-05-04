@@ -11,6 +11,7 @@ class DoPaMeter:
     Parameters
     ----------
 
+    config_corpora : dict
     config : dict
 
 
@@ -27,8 +28,10 @@ class DoPaMeter:
 
     def __init__(
             self,
+            config_corpora,
             config
     ):
+        self.config_corpora = config_corpora
         self.config = config
 
     def run_dopameter(self):
@@ -46,6 +49,11 @@ class DoPaMeter:
             'cluster'
         }
 
+        for corpus_name in self.config_corpora['corpora'].keys():
+            for c in ['<', '>', ':', '"', '/', "\\", '|', '?', '*']:
+                if c in corpus_name:
+                    self.config_corpora['corpora'][corpus_name]['internal_name'] = corpus_name.replace(c, '')
+
         if not set(tasks).intersection(valid_tasks):
             exit("Your given set of tasks is wrong. Allowed task definitions: " + ' '.join(valid_tasks) + ".")
 
@@ -56,28 +64,34 @@ class DoPaMeter:
 
         if set(tasks).intersection({'features', 'counts', 'corpus_characteristics'}):
             from dopameter.featurehub import process_feature_hub
-            process_feature_hub(config=self.config, tasks=tasks)
+
+            process_feature_hub(
+                conf_corpora=self.config_corpora,
+                config=self.config,
+                tasks=tasks
+            )
+
+        config = {**self.config, **self.config_corpora}
 
         if 'compare' in tasks:
             from dopameter.analytics import comparison
-            comparison(config=self.config)
+            comparison(config=config)
 
         if 'features_detail' in tasks:
             from dopameter.analytics import detail_metrics
-            detail_metrics(config=self.config)
+            detail_metrics(config=config)
 
-        if 'plot' in tasks and 'features_detail' in tasks:
-            from dopameter.analytics import visualization
-            visualization(config=self.config)
+        if 'features_detail' in tasks and 'plot' in tasks:
+            from dopameter.analytics import visualize_detailed_features
+            visualize_detailed_features(config=config)
 
         if 'cluster' in tasks:
-            from dopameter.analytics.aggregation import run_aggregation
-            run_aggregation(config=self.config)
+            from dopameter.analytics.aggregation import aggregation
+            aggregation(config=config)
 
         logging.info('===============================================================================================')
         logging.info('Running DoPa Meter done.')
         logging.info('===============================================================================================')
-
 
 def features():
     return None

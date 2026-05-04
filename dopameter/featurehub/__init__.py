@@ -1,22 +1,53 @@
 import json
 import os
-
 import pandas as pd
 import logging
 from sklearn.feature_extraction.text import TfidfVectorizer
+import collections
+
+import spacy_syllables  # Do not delete this line!
 
 from dopameter.configuration.installation import ConfLanguages
+from dopameter.configuration.pipeline import PreProcessingPipline
+from dopameter.language_collection.corpora_collection.corpora import SetUpCorpora
+
+from dopameter.analytics.vis_utils import clean_file_name
 from dopameter.analytics.summarization import df_to_file, sum_all_corpora_to_file, macro_features_to_file, features_to_file
+from dopameter.language_collection.corpora_collection.corpora.corpus.document import BasicCharacteristics
+
+from dopameter.featurehub.token_characteristics import TokenCharacteristics
+from dopameter.featurehub.pos import POSFeatures
+from dopameter.featurehub.ner import NERFeatures
+from dopameter.featurehub.ngrams import NGramFeatures
+
+from dopameter.featurehub.lexical_diversity import LexicalDiversityFeatures
+from dopameter.featurehub.surface import SurfaceFeaturizes
+from dopameter.featurehub.surface.de import SurfaceFeaturizesDE
+from dopameter.featurehub.surface.en import SurfaceFeaturizesEN
+
+from dopameter.featurehub.syntax.dependency import DependencyFeatures
+from dopameter.featurehub.syntax.constituency import ConstituencyFeatures
+from dopameter.featurehub.emotion import EmotionFeatures
+
+from dopameter.featurehub.semantics.wordnet import WordNetFeatures
+from dopameter.featurehub.semantics.dictionary_lookup.simple import DictionaryLookUp
 
 
-def process_feature_hub(config, tasks):
+def process_feature_hub(conf_corpora, config, tasks):
     #global path_features
     logging.info('Start running Feature Hub.')
 
     path_summary = config['output']['path_summary']
-    if not os.path.isdir(path_summary):
-        os.mkdir(path_summary)
+    # The given directory of features misc/out_dopameter/features is not existing. No clusting started!
 
+    #ps = path_summary.split(os.sep)
+    path_to_build = ''
+    for p in path_summary.split(os.sep):
+        path_to_build += p + os.sep
+        if not os.path.isdir(path_to_build):
+            os.mkdir(path_to_build)
+
+    path_counts = 'dopameter_counts' # init if not defined
     if 'counts' in tasks or 'corpus_characteristics' in tasks:
         path_counts = config['output']['path_counts']
         if not os.path.isdir(path_counts):
@@ -60,20 +91,16 @@ def process_feature_hub(config, tasks):
         features = {}
         external_resources = {}
 
-    from dopameter.language_collection.corpora_collection.corpora import SetUpCorpora
-
     col_by_lang = SetUpCorpora(
-        corpora=config['corpora'],
+        corpora=conf_corpora['corpora'],
         features=features,
         external_resources=external_resources
     ).create_corpora()
 
     if len(col_by_lang) > 1:
-        logging.info(str(len(col_by_lang)) + ' languages to process: ' + str(
-            [ConfLanguages().lang_def[lang] for lang in col_by_lang]))
+        logging.info(str(len(col_by_lang)) + ' languages to process: ' + str([ConfLanguages().lang_def[lang] for lang in col_by_lang]))
     elif len(col_by_lang) == 1:
-        logging.info(str(len(col_by_lang)) + ' language to process: ' + str(
-            [ConfLanguages().lang_def[lang] for lang in col_by_lang]))
+        logging.info(str(len(col_by_lang)) + ' language to process: ' + str([ConfLanguages().lang_def[lang] for lang in col_by_lang]))
     else:
         exit('Routine aborted! There are no languages to process selected. Configure minimal 1 language set-up!')
 
@@ -83,7 +110,7 @@ def process_feature_hub(config, tasks):
     elif len(collection_names) == 1:
         logging.info(str(len(collection_names)) + ' collection to process: ' + str(list(collection_names.keys())))
     else:
-        exit('Routine aborted! There are no corpora selected. Configure minimal 1 text corpus with files!')
+        exit('Routine aborted! There are no collections selected. Configure minimal 1 text collections with files!')
 
     # languages and their collections {col_by_lang[lang].name: list(col_by_lang[lang].collections.keys()) for lang in col_by_lang}
 
@@ -93,103 +120,77 @@ def process_feature_hub(config, tasks):
     elif len(corpora_names) == 1:
         logging.info(str(len(corpora_names)) + ' corpus to process: ' + str(corpora_names))
     else:
-        exit('Routine aborted! There are no corpora selected. Configure minimal 1 text corpus with files!')
-
-    from dopameter.configuration.pipeline import PreProcessingPipline
+        exit('--> Routine aborted! There are no corpora selected. Configure minimal 1 text corpus with files!')
 
     pipeline = PreProcessingPipline(config=config)
 
-    corp_i = 0
+    corpus_i = 0
     for lang in col_by_lang:
         logging.info('===============================================================================================')
         logging.info("Start to process language '" + ConfLanguages().lang_def[lang] + "'")
         logging.info('===============================================================================================')
         nlp = pipeline.create_nlp(lang)
 
-        from dopameter.language_collection.corpora_collection.corpora.corpus.document import BasicCharacteristics
-
-        basic_chars = BasicCharacteristics()
+        module_basic_chars = BasicCharacteristics()
 
         if 'token_characteristics' in features.keys():
-            from dopameter.featurehub.token_characteristics import TokenCharacteristics
-
-            tok_chars = TokenCharacteristics(
+            module_tok_chars = TokenCharacteristics(
                 features=features['token_characteristics'],
             )
 
         if 'pos' in features.keys():
-            from dopameter.featurehub.pos import POSFeatures
-
-            pos = POSFeatures(
+            module_pos = POSFeatures(
                 nlp=nlp,
                 features=features['pos']
             )
 
         if 'ner' in features.keys():
-            from dopameter.featurehub.ner import NERFeatures
-
-            ner = NERFeatures(
+            module_ner = NERFeatures(
                 nlp=nlp,
                 features=features['ner']
             )
 
         if 'ngrams' in features.keys():
-            from dopameter.featurehub.ngrams import NGramFeatures
-
-            ngrams = NGramFeatures(
+            module_ngrams = NGramFeatures(
                 config=config,
                 features=features['ngrams']
             )
             features['ngrams'] = [int(i) for i in features['ngrams']]
 
         if 'lexical_diversity' in features.keys():
-            from dopameter.featurehub.lexical_diversity import LexicalDiversityFeatures
-
-            lexical_diversity = LexicalDiversityFeatures(
+            module_lexical_diversity = LexicalDiversityFeatures(
                 features=features['lexical_diversity']
             )
 
         if 'surface' in features.keys():
-            import spacy_syllables
             nlp.add_pipe("syllables", after="tagger")  # 'import spacy_syllables' is used before!
             if lang == 'de':
-                from dopameter.featurehub.surface.de import SurfaceFeaturizesDE
-                surface = SurfaceFeaturizesDE(features=features['surface'])
+                module_surface = SurfaceFeaturizesDE(features=features['surface'])
             elif lang == 'en':
-                from dopameter.featurehub.surface.en import SurfaceFeaturizesEN
-                surface = SurfaceFeaturizesEN(features=features['surface'])
+                module_surface = SurfaceFeaturizesEN(features=features['surface'])
             else:
-                from dopameter.featurehub.surface import SurfaceFeaturizes
-                surface = SurfaceFeaturizes(features=features['surface'])
+                module_surface = SurfaceFeaturizes(features=features['surface'])
 
         if set(features.keys()).intersection({'syntax_dependency_metrics', 'syntax_dependency_tree'}):
-            from dopameter.featurehub.syntax.dependency import DependencyFeatures
-
-            syntax_dependency = DependencyFeatures(
+            module_syntax_dependency = DependencyFeatures(
                 features=features
             )
 
         if set(features.keys()).intersection({'syntax_constituency_metrics', 'syntax_constituency_tree'}):
-            from dopameter.featurehub.syntax.constituency import ConstituencyFeatures
-
-            syntax_constituency = ConstituencyFeatures(
+            module_syntax_constituency = ConstituencyFeatures(
                 lang=lang,
                 features=features
             )
 
         if set(features.keys()).intersection({'wordnet_synsets', 'wordnet_senses', 'wordnet_semantic_relations'}):
-            from dopameter.featurehub.semantics.wordnet import WordNetFeatures
-
-            semantics_wordnet = WordNetFeatures(
+            module_semantics_wordnet = WordNetFeatures(
                 lang=lang,
                 features=features
             )
 
         if 'dictionary_lookup' in features.keys():
-            from dopameter.featurehub.semantics.dictionary_lookup.simple import DictionaryLookUp
-
             if 'dictionary_lookup' in features.keys():
-                dictionary_lookup = DictionaryLookUp(
+                module_dictionary_lookup = DictionaryLookUp(
                     nlp=nlp,
                     path_dictionaries=config['external_resources']['dictionaries'],
                     file_format_dicts=config['settings']['file_format_dicts'],
@@ -197,9 +198,7 @@ def process_feature_hub(config, tasks):
                 )
 
         if 'emotion' in features.keys():
-            from dopameter.featurehub.emotion import EmotionFeatures
-
-            emotion = EmotionFeatures(
+            module_emotion = EmotionFeatures(
                 lang=lang,
                 features=features['emotion']
             )
@@ -218,14 +217,14 @@ def process_feature_hub(config, tasks):
 
             for corpus in col_by_lang[lang].collections[collect].corpora:
 
-                corp_i += 1
+                corpus_i += 1
                 logging.info('-----------------------------------------------------------------------------------------------')
-                logging.info('\tStart to process corpus (' + str(corp_i) + '/' + str(len(corpora_names)) + '): ' + corpus.name)
+                logging.info('\tStart to process corpus (' + str(corpus_i) + '/' + str(len(corpora_names)) + '): ' + corpus.name)
                 logging.info('\t# ' + str(len(corpus.files)) + ' files from ' + corpus.path)
                 logging.info('-----------------------------------------------------------------------------------------------')
 
                 for i, f in enumerate(corpus.files):
-                    logging.info("process corpus '" + corpus.name + "' (" + str(corp_i) + '/' + str(len(corpora_names)) + ') - file (' + str(i + 1) + '/' + str(len(corpus.files)) + ') ' + str(f))
+                    logging.info("process corpus '" + corpus.name + "' (" + str(corpus_i) + '/' + str(len(corpora_names)) + ') - file (' + str(i + 1) + '/' + str(len(corpus.files)) + ') ' + str(f))
 
                     doc_name = os.path.basename(f)
                     plain_text = open(file=f, encoding=corpus.encoding).read()
@@ -238,54 +237,54 @@ def process_feature_hub(config, tasks):
 
                         corpus.update_properties(
                             feature='basic_counts',
-                            data=basic_chars.count_doc(doc=doc),
+                            data=module_basic_chars.count_doc(doc=doc),
                             doc_name=doc_name
                         )
 
                         if 'token_characteristics' in features.keys():
                             corpus.update_properties(
                                 feature='token_characteristics',
-                                data=tok_chars.feat_doc(doc=doc),
+                                data=module_tok_chars.feat_doc(doc=doc),
                                 doc_name=doc_name
                             )
 
                         if 'pos' in features.keys():
                             corpus.update_properties(
                                 feature='pos',
-                                data=pos.feat_doc(doc=doc),
+                                data=module_pos.feat_doc(doc=doc),
                                 doc_name=doc_name
                             )
 
                         if 'ner' in features.keys():
                             corpus.update_properties(
                                 feature='ner',
-                                data=ner.feat_doc(doc=doc),
+                                data=module_ner.feat_doc(doc=doc),
                                 doc_name=doc_name
                             )
 
                         if 'ngrams' in features.keys():
                             corpus.update_properties(
                                 feature='ngrams',
-                                data=ngrams.feat_doc(doc=doc),
+                                data=module_ngrams.feat_doc(doc=doc),
                                 doc_name=doc_name
                             )
 
                         if 'lexical_diversity' in features.keys():
                             corpus.update_properties(
                                 feature='lexical_diversity',
-                                data=lexical_diversity.feat_doc(doc=doc),
+                                data=module_lexical_diversity.feat_doc(doc=doc),
                                 doc_name=doc_name
                             )
 
                         if 'surface' in features.keys():
                             corpus.update_properties(
                                 feature='surface',
-                                data=surface.feat_doc(doc=doc),
+                                data=module_surface.feat_doc(doc=doc),
                                 doc_name=doc_name
                             )
 
                         if set(features.keys()).intersection({'syntax_dependency_metrics', 'syntax_dependency_metrics'}):
-                            syntax_dep_feats = syntax_dependency.feat_doc(doc=doc)
+                            syntax_dep_feats = module_syntax_dependency.feat_doc(doc=doc)
                             for feature_file in syntax_dep_feats.keys():
                                 corpus.update_properties(
                                     feature=feature_file,
@@ -294,7 +293,7 @@ def process_feature_hub(config, tasks):
                                 )
 
                         if set(features.keys()).intersection({'syntax_constituency_metrics', 'syntax_constituency_tree'}):
-                            syntax_const_feats = syntax_constituency.feat_doc(doc=doc, plain_text=plain_text)
+                            syntax_const_feats = module_syntax_constituency.feat_doc(doc=doc, plain_text=plain_text)
                             for feature_file in syntax_const_feats.keys():
                                 corpus.update_properties(
                                     feature=feature_file,
@@ -302,8 +301,12 @@ def process_feature_hub(config, tasks):
                                     doc_name=doc_name
                                 )
 
-                        if set(features.keys()).intersection({'wordnet_synsets', 'wordnet_senses', 'wordnet_semantic_relations'}) and lang in ConfLanguages().wordnet_languages:
-                            sem_wordnet_feats = semantics_wordnet.feat_doc(doc=doc)
+                        if set(features.keys()).intersection({
+                            'wordnet_synsets',
+                            'wordnet_senses',
+                            'wordnet_semantic_relations'
+                        }) and lang in ConfLanguages().wordnet_languages:
+                            sem_wordnet_feats = module_semantics_wordnet.feat_doc(doc=doc)
 
                             for feature_file in sem_wordnet_feats.keys():
                                 corpus.update_properties(
@@ -313,7 +316,7 @@ def process_feature_hub(config, tasks):
                                 )
 
                         if 'dictionary_lookup' in features.keys():
-                            dictionary_lookup_feats = dictionary_lookup.feat_doc(doc=doc)
+                            dictionary_lookup_feats = module_dictionary_lookup.feat_doc(doc=doc)
                             for feature_file in dictionary_lookup_feats.keys():
                                 corpus.update_properties(
                                     feature=feature_file,
@@ -324,7 +327,7 @@ def process_feature_hub(config, tasks):
                         if 'emotion' in features.keys():
                             corpus.update_properties(
                                 feature='emotion',
-                                data=emotion.feat_doc(doc=doc),
+                                data=module_emotion.feat_doc(doc=doc),
                                 doc_name=doc_name
                             )
 
@@ -339,7 +342,9 @@ def process_feature_hub(config, tasks):
                         path_summary=path_summary,
                         corpus=corpus,
                         feature_name='corpus_characteristics',
-                        file_format_features=config['settings']['file_format_features']
+                        file_format_features=config['settings']['file_format_features'],
+                        tasks=tasks,
+                        file_format_plots=config['settings']['file_format_plots']
                     )
 
                     path_summary_cc = path_counts + os.sep + 'corpus_characteristics'
@@ -348,7 +353,7 @@ def process_feature_hub(config, tasks):
 
                     df_to_file(
                         data=pd.DataFrame(data=corpus.document_cnt_characteristics).transpose(),
-                        path_file=path_summary_cc + os.sep + corpus.name,
+                        path_file=path_summary_cc + os.sep + clean_file_name(corpus.name),
                         file_format_features=config['settings']['file_format_features']
                     )
 
@@ -359,47 +364,48 @@ def process_feature_hub(config, tasks):
                     df_corpus_features = pd.DataFrame(data=corpus.features[feat]).rename_axis('document')
 
                     path_feature_bundle = path_features + os.sep + feat
-                    if not os.path.isdir(path_feature_bundle):
+                    if not os.path.isdir(path_feature_bundle) and feat != 'corpus_characteristics':
                         os.mkdir(path_feature_bundle)
 
-                    if feat != 'ngrams':
+                    if feat != 'ngrams' and feat != 'corpus_characteristics':
 
                         df_to_file(
                             data=pd.DataFrame(data=df_corpus_features, dtype='float32'),
-                            path_file=path_feature_bundle + os.sep + corpus.name + '_' + feat,
+                            path_file=path_feature_bundle + os.sep + clean_file_name(corpus.name + '_' + feat),
                             file_format_features=config['settings']['file_format_features']
                         )
 
                         path_features_summary = path_summary + os.sep + 'summary_documents'
-                        if not os.path.isdir(path_features_summary):
+                        if not os.path.isdir(path_features_summary) and feat != 'corpus_characteristics':
                             os.mkdir(path_features_summary)
 
                         path_features_summary = path_features_summary + os.sep + feat
                         if not os.path.isdir(path_features_summary):
                             os.mkdir(path_features_summary)
 
+                        summary_df = pd.DataFrame() #  should be global init
                         if not df_corpus_features.empty:
                             summary_df = df_corpus_features.describe().transpose()
-                        else:
-                            summary_df = pd.DataFrame()
+                        #else:
+                        #    summary_df = pd.DataFrame()
 
                     if feat == 'lexical_diversity':
-                        corpus.macro_features['lexical_diversity'] = lexical_diversity.feat_corpus(corpus=corpus)
+                        corpus.macro_features['lexical_diversity'] = module_lexical_diversity.feat_corpus(corpus=corpus)
 
                     elif feat == 'surface':
-                        corpus.macro_features['surface'] = surface.feat_corpus(corpus=corpus)
+                        corpus.macro_features['surface'] =  module_surface.feat_corpus(corpus=corpus)
 
                     elif feat == 'syntax_dependency_metrics':
-                        corpus.macro_features['syntax_dependency_metrics'] = syntax_dependency.feat_corpus(corpus=corpus)
+                        corpus.macro_features['syntax_dependency_metrics'] = module_syntax_dependency.feat_corpus(corpus=corpus)
 
                     elif feat == 'syntax_constituency_metrics':
-                        corpus.macro_features['syntax_constituency_metrics'] = syntax_constituency.feat_corpus(corpus=corpus)
+                        corpus.macro_features['syntax_constituency_metrics'] = module_syntax_constituency.feat_corpus(corpus=corpus)
 
                     elif feat == 'wordnet_semantic_relations':
-                        corpus.macro_features['wordnet_semantic_relations'] = semantics_wordnet.feat_corpus(corpus=corpus)
+                        corpus.macro_features['wordnet_semantic_relations'] = module_semantics_wordnet.feat_corpus(corpus=corpus)
 
                     elif feat == 'emotion':
-                        corpus.macro_features['emotion'] = emotion.feat_corpus(corpus=corpus)
+                        corpus.macro_features['emotion'] =  module_emotion.feat_corpus(corpus=corpus)
 
                     collection.update_scores(feature=feat, resources=corpus.resources)
 
@@ -408,19 +414,21 @@ def process_feature_hub(config, tasks):
                             path_summary=path_summary,
                             corpus=corpus,
                             feature_name=feat,
-                            file_format_features=config['settings']['file_format_features']
+                            file_format_features=config['settings']['file_format_features'],
+                            tasks=tasks,
+                            file_format_plots=config['settings']['file_format_plots']
                         )
                         summary_df['corpus wise'] = pd.DataFrame(data=corpus.macro_features[feat])
 
                         df_to_file(
                             data=summary_df.round(4),
-                            path_file=path_features_summary + os.sep + corpus.name + '_' + feat + '_summary',
+                            path_file=path_features_summary + os.sep + clean_file_name(corpus.name + '_' + feat + '_summary'),
                             file_format_features=config['settings']['file_format_features']
                         )
 
                 for feat in corpus.counts.keys():
 
-                    if 'counts' in tasks:
+                    if 'counts' in tasks and feat != 'corpus_characteristics':
                         logging.info('----')
                         logging.info('counts: ' + feat)
 
@@ -435,7 +443,7 @@ def process_feature_hub(config, tasks):
 
                         df_to_file(
                             data=df_corpus_counts,
-                            path_file=path_count_bundle + os.sep + corpus.name + '_corpus_counts_' + feat,
+                            path_file=path_count_bundle + os.sep + clean_file_name(corpus.name + '_corpus_counts_' + feat),
                             file_format_features=config['settings']['file_format_features']
                         )
 
@@ -462,12 +470,24 @@ def process_feature_hub(config, tasks):
                             for doc_name in corpus.counts[feat][item]:
                                 corpus_features[item][doc_name] = (corpus.counts[feat][item][doc_name] / corpus.document_cnt_characteristics[doc_name]['tokens'])
 
+                        df_features = pd.DataFrame.from_dict(
+                            data=corpus_features,
+                            dtype='float32').rename_axis('document')
+
+                        # hier Warnung via logging rein machen! start
+                        if feat in ["wordnet_synsets", "wordnet_senses"]:
+                            #df_features = df_features[df_features.count()[:2000].index.tolist()]
+                            #df_features = df_features[df_features.count()[:1000].index.tolist()]
+                            df_features = df_features[df_features.count()[:config['settings']['most_frequent_words']].index.tolist()]
+                        # end...
+
                         features_to_file(
                             path_features=path_features,
                             feat=feat,
-                            df_corpus_features=pd.DataFrame.from_dict(
-                                data=corpus_features,
-                                dtype='float32').rename_axis('document'),
+                            df_corpus_features=df_features,
+                            #df_corpus_features=pd.DataFrame.from_dict(
+                            #    data=corpus_features,
+                            #    dtype='float32').rename_axis('document'),
                             corpus=corpus,
                             file_format_features=config['settings']['file_format_features']
                         )
@@ -493,7 +513,7 @@ def process_feature_hub(config, tasks):
 
                         df_to_file(
                             data=summary_df.round(4),
-                            path_file=path_features_summary + os.sep + corpus.name + '_' + feat + '_summary',
+                            path_file=path_features_summary + os.sep + clean_file_name(corpus.name + '_' + feat + '_summary'),
                             file_format_features=config['settings']['file_format_features']
                         )
 
@@ -501,7 +521,9 @@ def process_feature_hub(config, tasks):
                             path_summary=path_summary,
                             corpus=corpus,
                             feature_name=feat,
-                            file_format_features=config['settings']['file_format_features']
+                            file_format_features=config['settings']['file_format_features'],
+                            tasks=tasks,
+                            file_format_plots=config['settings']['file_format_plots']
                         )
 
                         collection.update_counts(feature=feat, scores=sum_all_corpora_counts[corpus.name])
@@ -513,7 +535,8 @@ def process_feature_hub(config, tasks):
                             file_format_features=config['settings']['file_format_features'],
                             corpus_name = corpus.name,
                             collection=corpus.collection_name,
-                            language=ConfLanguages().lang_def[lang]
+                            language=ConfLanguages().lang_def[lang],
+                            tasks=tasks
                         )
 
                 if 'ngrams' in features.keys():
@@ -548,13 +571,15 @@ def process_feature_hub(config, tasks):
 
                         df_to_file(
                             data=df_tfidf,
-                            path_file=path_feature_bundle + os.sep + corpus.name + '_' + str(n) + n_gram_def,
+                            path_file=path_feature_bundle + os.sep + clean_file_name(corpus.name + '_' + str(n) + n_gram_def),
                             file_format_features=config['settings']['file_format_features']
                         )
 
                 if bool(config['settings']['store_sources']):
 
                     path_storage_sources = config['output']['path_sources']
+                    if not os.path.isdir(path_storage_sources):
+                        os.mkdir(path_storage_sources)
 
                     path_corpus_res = path_storage_sources + os.sep + corpus.name
                     if not os.path.isdir(path_corpus_res):
@@ -608,46 +633,70 @@ def process_feature_hub(config, tasks):
                             )
                         logging.info('Source: ' + path_corpus_res + os.sep + corpus.name + '__' + term + '.json')
 
+                    for res in corpus.resources.lexical_diversity:
+                        if type(corpus.resources.lexical_diversity[res]) == list:
+                            corpus.resources.lexical_diversity[res] = collections.Counter(corpus.resources.lexical_diversity[res])
+
+                        with open(
+                                file=path_corpus_res + os.sep + corpus.name + '__' + res + '.json',
+                                mode='w',
+                                encoding='utf-8'
+                        ) as f:
+                            json.dump(
+                                obj=corpus.resources.lexical_diversity[res],
+                                fp=f,
+                                ensure_ascii=False
+                            )
+                        logging.info('Source: ' + path_corpus_res + os.sep + corpus.name + '__' + res + '.json')
+
                 corpus.clear()
 
             col_by_lang[lang].sizes.update_sizes_by_corpus_scores(collection.sizes)
 
-            for feat in collection.counts:
-                collection.macro_features[feat] = {'features': {key: collection.counts[feat][key] / collection.sizes.tokens_cnt for key in collection.counts[feat]}}
-                col_by_lang[lang].update_counts(feature=feat, scores=collection.counts[feat])
+            if 'counts' in tasks or 'corpus_characteristics' in tasks:
+                for feat in collection.counts:
+                    collection.macro_features[feat] = {'features': {key: collection.counts[feat][key] / collection.sizes.tokens_cnt for key in collection.counts[feat]}}
+                    col_by_lang[lang].update_counts(feature=feat, scores=collection.counts[feat])
 
-                sum_all_corpora_to_file(
-                    path_counts=path_counts,
-                    sum_all_corpora_counts={collection.name:collection.counts[feat]},
-                    feature_name=feat,
-                    file_format_features=config['settings']['file_format_features'],
-                    corpus_name=[collection_names[collection.name]],
-                    collection=collection.name,
-                    language=ConfLanguages().lang_def[lang]
-                )
+                    sum_all_corpora_to_file(
+                        path_counts=path_counts,
+                        sum_all_corpora_counts={collection.name:collection.counts[feat]},
+                        feature_name=feat,
+                        file_format_features=config['settings']['file_format_features'],
+                        corpus_name=[collection_names[collection.name]],
+                        collection=collection.name,
+                        language=ConfLanguages().lang_def[lang],
+                        tasks=tasks
+                    )
 
             for feat in features:
+
+                if 'corpus_characteristics' in tasks:
+                    collection.macro_features['corpus_characteristics'] = collection.get_collection_counts()
+
                 if feat == 'lexical_diversity':
-                    collection.macro_features[feat] = lexical_diversity.feat_corpus(collection)
+                    collection.macro_features[feat] = module_lexical_diversity.feat_corpus(collection)
 
                 elif feat == 'surface':
-                    collection.macro_features[feat] = surface.feat_corpus(collection)
+                    collection.macro_features[feat] = module_surface.feat_corpus(collection)
 
                 elif feat == 'syntax_dependency_metrics':
-                    collection.macro_features[feat] = syntax_dependency.feat_corpus(collection)
+                    collection.macro_features[feat] = module_syntax_dependency.feat_corpus(collection)
 
                 elif feat == 'wordnet_semantic_relations':
-                    collection.macro_features[feat] = semantics_wordnet.feat_corpus(collection)
+                    collection.macro_features[feat] = module_semantics_wordnet.feat_corpus(collection)
 
                 elif feat == 'emotion':
-                    collection.macro_features[feat] = emotion.feat_corpus(collection)
+                    collection.macro_features[feat] = module_emotion.feat_corpus(collection)
 
                 col_by_lang[lang].update_scores(feature=feat, resources=collection.resources)
                 macro_features_to_file(
                     path_summary=path_summary,
                     corpus=collection,
                     feature_name=feat,
-                    file_format_features=config['settings']['file_format_features']
+                    file_format_features=config['settings']['file_format_features'],
+                    tasks=tasks,
+                    file_format_plots=config['settings']['file_format_plots']
                 )
             collection.clear()
 
@@ -656,7 +705,11 @@ def process_feature_hub(config, tasks):
             logging.info('-----------------------------------------------------------------------------------------------')
 
         for feat in col_by_lang[lang].counts:
-            col_by_lang[lang].macro_features[feat] = {'features': {key: col_by_lang[lang].counts[feat][key] / col_by_lang[lang].sizes.tokens_cnt for key in col_by_lang[lang].counts[feat]}}
+            col_by_lang[lang].macro_features[feat] = {
+                'features': {
+                    key: col_by_lang[lang].counts[feat][key] / col_by_lang[lang].sizes.tokens_cnt for key in col_by_lang[lang].counts[feat]
+                }
+            }
             col_by_lang[lang].update_counts(feature=feat, scores=col_by_lang[lang].counts[feat])
 
             sum_all_corpora_to_file(
@@ -666,37 +719,44 @@ def process_feature_hub(config, tasks):
                 file_format_features=config['settings']['file_format_features'],
                 corpus_name=[corpus.name for col in col_by_lang[lang].collections for corpus in col_by_lang[lang].collections[col].corpora],
                 collection=list(col_by_lang[lang].collections.keys()),
-                language=ConfLanguages().lang_def[lang]
+                language=ConfLanguages().lang_def[lang],
+                tasks=tasks
             )
 
         for feat in features:
+
+            if 'corpus_characteristics' in tasks:
+                col_by_lang[lang].macro_features['corpus_characteristics'] = col_by_lang[lang].get_language_counts()
+
             if feat == 'lexical_diversity':
-                col_by_lang[lang].macro_features[feat] = lexical_diversity.feat_corpus(col_by_lang[lang])
+                 col_by_lang[lang].macro_features[feat] = module_lexical_diversity.feat_corpus(col_by_lang[lang])
 
             elif feat == 'surface':
-                col_by_lang[lang].macro_features[feat] = surface.feat_corpus(col_by_lang[lang])
+                col_by_lang[lang].macro_features[feat] = module_surface.feat_corpus(col_by_lang[lang])
 
             elif feat == 'syntax_dependency_metrics':
-                col_by_lang[lang].macro_features[feat] = syntax_dependency.feat_corpus(col_by_lang[lang])
+                col_by_lang[lang].macro_features[feat] = module_syntax_dependency.feat_corpus(col_by_lang[lang])
 
             elif feat == 'wordnet_semantic_relations':
-                col_by_lang[lang].macro_features[feat] = semantics_wordnet.feat_corpus(col_by_lang[lang])
+                col_by_lang[lang].macro_features[feat] = module_semantics_wordnet.feat_corpus(col_by_lang[lang])
 
             elif feat == 'emotion':
-                col_by_lang[lang].macro_features[feat] = emotion.feat_corpus(col_by_lang[lang])
+                col_by_lang[lang].macro_features[feat] = module_emotion.feat_corpus(col_by_lang[lang])
 
             macro_features_to_file(
                 path_summary=path_summary,
                 corpus=col_by_lang[lang],
                 feature_name=feat,
-                file_format_features=config['settings']['file_format_features']
+                file_format_features=config['settings']['file_format_features'],
+                tasks=tasks,
+                file_format_plots=config['settings']['file_format_plots']
             )
 
-    col_by_lang[lang].clear()
+        col_by_lang[lang].clear()
 
-    logging.info('===============================================================================================')
-    logging.info("Processing of LANGUAGE '" + ConfLanguages().lang_def[lang] + "' done.")
-    logging.info('===============================================================================================')
+        logging.info('===============================================================================================')
+        logging.info("Processing of LANGUAGE '" + ConfLanguages().lang_def[lang] + "' done.")
+        logging.info('===============================================================================================')
 
     if 'features' in tasks:
         logging.info('Output of features in ' + str(path_features))

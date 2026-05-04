@@ -226,8 +226,8 @@ class SurfaceFeaturizesEN(SurfaceFeaturizes):
                 data['features']['avg_sent_len_chars'] = 0
 
         cnt_sentences = len(list(doc.sents))
-        cnt_letter_tokens = sum([len(token) for token in doc if not token.is_punct and not token.is_digit])
-        cnt_no_digit_tokens = sum([len(token) for token in doc if not token.is_punct])
+        #cnt_letter_tokens = sum([len(token) for token in doc if not token.is_punct and not token.is_digit])
+        cnt_no_punct_tokens = sum([len(token) for token in doc if not token.is_punct])
 
         syllables_per_word = [0 if s is None else s for s in [token._.syllables_count for token in doc]]
 
@@ -243,10 +243,10 @@ class SurfaceFeaturizesEN(SurfaceFeaturizes):
             data['features']['smog'] = self.smog(cnt_sentences, doc._.cnt_words, doc._.cnt_poly_syllables)
 
         if 'coleman_liau' in self.features:
-            data['features']['coleman_liau'] = self.coleman_liau(cnt_sentences, doc._.cnt_words, cnt_letter_tokens)
+            data['features']['coleman_liau'] = self.coleman_liau(cnt_sentences, doc._.cnt_words, cnt_no_punct_tokens)
 
         if 'ari' in self.features:
-            data['features']['ari'] = self.ari(cnt_sentences, doc._.cnt_words, cnt_no_digit_tokens)
+            data['features']['ari'] = self.ari(cnt_sentences, doc._.cnt_words, cnt_no_punct_tokens)
 
         temp = []
         segments = []
@@ -293,8 +293,8 @@ class SurfaceFeaturizesEN(SurfaceFeaturizes):
         data['surface']['cnt_syllables'] = doc._.cnt_syllables
         data['surface']['cnt_words'] = doc._.cnt_words
         data['surface']['cnt_poly_syllables'] = doc._.cnt_poly_syllables
-        data['surface']['cnt_letter_tokens'] = cnt_letter_tokens
-        data['surface']['cnt_no_digit_tokens'] = cnt_no_digit_tokens
+        #data['surface']['cnt_letter_tokens'] = cnt_letter_tokens
+        data['surface']['cnt_no_punct_tokens'] = cnt_no_punct_tokens
 
         data['surface']['syllables_per_word'] = syllables_per_word
         data['surface']['cnt_pos'] = cnt_pos
@@ -302,8 +302,8 @@ class SurfaceFeaturizesEN(SurfaceFeaturizes):
 
         data['surface']['syllables'] = collections.Counter([i for g in [word._.syllables for word in (word for word in doc if not word.is_punct and "'" not in word.text and word._.syllables != None)] for i in g])
         data['surface']['letter_tokens'] = collections.Counter([token.text for token in doc if not token.is_punct and not token.is_digit])
-        data['surface']['no_digit_tokens'] = collections.Counter([token.text for token in doc if not token.is_punct])
-        data['surface']['sentences'] = collections.Counter([sent.text for sent in doc.sents])
+        data['surface']['no_punct_tokens'] = collections.Counter([token.text for token in doc if not token.is_punct])
+        #data['surface']['sentences'] = collections.Counter([sent.text for sent in doc.sents])
 
 
         data['surface']['cnt_diff_words'] = cnt_diff_words
@@ -314,7 +314,7 @@ class SurfaceFeaturizesEN(SurfaceFeaturizes):
 
         data['counts']['syllables'] = sum(data['surface']['syllables'].values())
         data['counts']['letter_tokens'] = sum(data['surface']['letter_tokens'].values())
-        data['counts']['no_digit_tokens'] = sum(data['surface']['no_digit_tokens'].values())
+        data['counts']['no_punct_tokens'] = sum(data['surface']['no_punct_tokens'].values())
 
         return data
 
@@ -398,17 +398,19 @@ class SurfaceFeaturizesEN(SurfaceFeaturizes):
             )
 
         if 'coleman_liau' in self.features:
+            cnt_letter_tokens = sum([val for tok, val in dict(corpus.resources.surface['no_punct_tokens']).items() if not tok.isdigit()])
             data['features']['coleman_liau'] = self.coleman_liau(
                 corpus.sizes.sentences_cnt,
                 corpus.resources.surface['cnt_words'],
-                corpus.resources.surface['cnt_letter_tokens']
+                #corpus.resources.surface['cnt_letter_tokens']
+                cnt_letter_tokens
             )
 
         if 'ari' in self.features:
             data['features']['ari'] = self.ari(
                 corpus.sizes.sentences_cnt,
                 corpus.resources.surface['cnt_words'],
-                corpus.resources.surface['cnt_no_digit_tokens']
+                corpus.resources.surface['cnt_no_punct_tokens']
             )
 
         if 'forcast' in self.features:

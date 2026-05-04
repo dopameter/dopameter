@@ -2,8 +2,6 @@ import collections
 import json
 import logging
 import os
-
-import numpy as np
 import wn
 
 from dopameter.configuration.installation import ConfLanguages
@@ -335,7 +333,7 @@ class WordNetFeatures:
         return data
 
     def feat_corpus(self, corpus):
-        """Get metrics of corpus wise semantic relations (by Wordnets
+        """Get metrics of corpus wise semantic relations (by Wordnets)
 
         Parameters
         ----------

@@ -3,10 +3,13 @@ import pandas as pd
 import os
 import glob
 
+import seaborn as sns
+from matplotlib import pyplot as plt
+
 from dopameter.configuration.installation import ConfLanguages
 
 
-def run_aggregation(config):
+def aggregation(config):
     if os.path.isdir(config['output']['path_features']):
 
         logging.info('===============================================================================================')
@@ -212,16 +215,20 @@ class ClusterCorpora:
                     'axes.spines.top': True
                 }
 
+        if 't-sne' in self.settings.keys():
+            self.path_tsne = self.path_clusters + os.sep + 't-sne'
+            if not os.path.isdir(self.path_tsne):
+                os.mkdir(self.path_tsne)
+
+            if 'k-means' in self.settings.keys():
+                self.path_tsne = self.path_tsne + os.sep + 'k-means'
+                if not os.path.isdir(self.path_tsne):
+                    os.mkdir(self.path_tsne)
 
         if 'k-means' in self.settings.keys():
             self.path_kmeans = self.path_clusters + os.sep + 'k-means'
             if not os.path.isdir(self.path_kmeans):
                 os.mkdir(self.path_kmeans)
-
-        if 't-sne' in self.settings.keys():
-            self.path_tsne = self.path_clusters + os.sep + 't-sne'
-            if not os.path.isdir(self.path_tsne):
-                os.mkdir(self.path_tsne)
 
 
     def cluster_corpora(self, path_features):
@@ -232,6 +239,7 @@ class ClusterCorpora:
         dataset = pd.DataFrame()
 
         for f in feat_corpora:
+
             corpus = os.path.basename(f).replace('.' + self.feature_file_format_for_clustering, '').replace('_' + feat_name, '')
 
             if corpus in self.corpora:
@@ -241,23 +249,67 @@ class ClusterCorpora:
                 elif self.feature_file_format_for_clustering == 'excel' or self.feature_file_format_for_clustering == 'xlsx':
                     data_f = pd.read_excel(f)
                 else:
-                    raise ValueError(
-                        'Your defined feature_file_format_for_clustering ' + self.feature_file_format_for_clustering + ' is not allowed. Allowed formats: csv, excel, xlsx!'
-                    )
+                    raise ValueError('Your defined feature_file_format_for_clustering ' + self.feature_file_format_for_clustering + ' is not allowed. Allowed formats: csv, excel, xlsx!')
 
                 if 'collection' in self.corpora[corpus].keys():
                     data_f['corpus'] = '[' + self.corpora[corpus]['collection'] + '] ' + corpus
                     data_f['collection'] = self.corpora[corpus]['collection']
+
                 else:
-                    data_f['collection'] = 'None'
                     data_f['corpus'] = corpus
+                    data_f['collection'] = 'None'
 
                 data_f['language'] = ConfLanguages().lang_def[self.corpora[corpus]['language']]
 
                 dataset = pd.concat([dataset, data_f])
                 logging.info('Loaded: ' + f)
 
-        if 'k-means' in self.settings.keys():
+            else:
+
+                for corpus_name in self.corpora:
+                    if 'internal_name' in self.corpora[corpus_name].keys():
+                        if corpus == self.corpora[corpus_name]['internal_name']:
+
+                            if self.feature_file_format_for_clustering == 'csv':
+                                data_f = pd.read_csv(f)
+                            elif self.feature_file_format_for_clustering == 'excel' or self.feature_file_format_for_clustering == 'xlsx':
+                                data_f = pd.read_excel(f)
+                            else:
+                                raise ValueError('Your defined feature_file_format_for_clustering ' + self.feature_file_format_for_clustering + ' is not allowed. Allowed formats: csv, excel, xlsx!')
+            
+                            if 'collection' in self.corpora[corpus_name].keys():
+                                data_f['corpus'] = '[' + self.corpora[corpus_name]['collection'] + '] ' + corpus_name
+                                data_f['collection'] = self.corpora[corpus_name]['collection']
+                            else:
+                                data_f['corpus'] = corpus_name
+                                data_f['collection'] = 'None'
+
+                            data_f['language'] = ConfLanguages().lang_def[self.corpora[corpus_name]['language']]
+            
+                            dataset = pd.concat([dataset, data_f])
+                            logging.info('Loaded: ' + f)
+
+        if 't-sne' in self.settings.keys():
+            from dopameter.analytics.aggregation.tsne import ClusterDBSCAN
+
+            c_tsne = ClusterDBSCAN(
+                corpora=self.corpora,
+                features=self.features,
+                path_features=self.path_features,
+                path_clusters=self.path_clusters,
+                feature_file_format_for_clustering=self.feature_file_format_for_clustering,
+                diagram_file_formats=self.diagram_file_formats,
+                settings=self.settings,
+                tasks=self.tasks,
+                file_format_features=self.file_format_features
+            )
+            c_tsne.cluster_tsne_by_feature(
+                dataset=dataset,
+                feat_name=feat_name,
+                file_format_plots=self.diagram_file_formats
+            )
+
+        elif 'k-means' in self.settings.keys():
             from dopameter.analytics.aggregation.kmeans import ClusterKMEANS
             c_kmeans = ClusterKMEANS(
                 corpora=self.corpora,
@@ -270,37 +322,32 @@ class ClusterCorpora:
                 tasks=self.tasks,
                 file_format_features=self.file_format_features
             )
-            c_kmeans.cluster_kmeans_by_feature(dataset=dataset, feat_name=feat_name)
-
-        if 't-sne' in self.settings.keys():
-            from dopameter.analytics.aggregation.tsne import ClusterTSNE
-            c_tsne = ClusterTSNE(
-                corpora=self.corpora,
-                features=self.features,
-                path_features=self.path_features,
-                path_clusters=self.path_clusters,
-                feature_file_format_for_clustering=self.feature_file_format_for_clustering,
-                diagram_file_formats=self.diagram_file_formats,
-                settings=self.settings,
-                tasks=self.tasks,
-                file_format_features=self.file_format_features
+            c_kmeans.cluster_kmeans_by_feature(
+                dataset=dataset,
+                feat_name=feat_name,
+                file_format_plots=self.diagram_file_formats
             )
-            c_tsne.cluster_tsne_by_feature(dataset=dataset, feat_name=feat_name)
-
-        return dataset, feat_corpora
 
     def compute_clusters(self):
         """prepare configuration of a given configuration"""
 
-        features = {os.path.basename(f): f.path for f in os.scandir(self.path_features) if f.is_dir()}
+        features = {os.path.basename(f): f.path for f in os.scandir(self.path_features) if f.is_dir() and os.path.basename(f) in self.features.keys()}
 
         if features:
             for feat in features:
-                if feat in self.features.keys() and feat != 'ngrams':
+                sns.set_theme(rc=self.sns_rs)
+                if feat in self.features.keys():# and feat != 'ngrams': # zweiter Teil vom if funktioniert nicht.
                     self.cluster_corpora(features[feat])
+
                 if '_ngrams_tfidf' in feat or '_ngrams_tfidf_pos' in feat:
+
                     n = int(feat.split('_')[0])
                     if 'ngrams' in self.features and n in self.features['ngrams']:
                         self.cluster_corpora(features[feat])
+                plt.close()
+                plt.clf()
+                plt.cla()
+                plt.close('all')
         else:
-            exit("The given directory of features " + self.path_features + " is empty! No clusting started!")
+            logging.warning("The given directory of features " + self.path_features + " is empty or features are not existing! No clusting started!")
+            exit()

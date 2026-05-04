@@ -119,7 +119,7 @@ class LexicalDiversityFeatures:
     def __init__(
             self,
             features='default',
-            window_size=30
+            window_size=100
     ):
 
         logging.info('\tInitialize lexical richness features.')
@@ -176,8 +176,9 @@ class LexicalDiversityFeatures:
             return 0
 
     def guiraud_r(self, types, tokens):
-        """Guiraud R (1954): $\frac{V(N)}{N}\$"""
+        """Guiraud R (1954): $\frac{V(N)}{sqrt(N)}\$   """
         div = math.sqrt(tokens)
+
         if div != 0:
             return types / div
         else:
@@ -198,7 +199,7 @@ class LexicalDiversityFeatures:
     def dugast_k(self, types, tokens):
         """Dugast (1979): $\frac{\log(V(N))}{\log(\log(N))}$"""
 
-        if tokens > 1:
+        if tokens > 1 and types > 0:
             div = math.log(math.log(tokens))
             if div != 0:
                 return math.log(types) / div
@@ -210,16 +211,17 @@ class LexicalDiversityFeatures:
     def maas_a2(self, types, tokens):
         """Maas (1972): $\frac{\log(N) - \log(V(N))}{\log(N)^2}$"""
 
-        if tokens > 0:
-            div = (math.log(tokens) ** 2)
-            if div != 0:
-                return math.log(tokens) - math.log(types) / div
-            else:
-                return 0
-        else:
-            return 0
+        if tokens > 1:  # log(1) wäre 0, daher tokens > 1
+            log_n = math.log(tokens)
+            log_v = math.log(types)
+            div = log_n ** 2
 
-    def dugast_u2(self, types, tokens):
+            if div != 0:
+                # Die Klammern um den Zähler sind entscheidend!
+                return (log_n - log_v) / div
+        return 0
+
+    def dugast_u(self, types, tokens):
         """Dugast (1978, 1979): $\frac{\log(N)^2}{\log(N) - \log(V(N))}$"""
 
         if tokens != 0 and types > 1:
@@ -282,7 +284,8 @@ class LexicalDiversityFeatures:
             doc_segment = doc_tokens[i * window_size:(i * window_size) + window_size]
             text_length = len(doc_segment)
             vocab_length = len(set(token for token in doc_segment))
-            sttr.append(self.type_token_ratio(text_length, vocab_length))
+
+            sttr.append(self.type_token_ratio(vocab_length, text_length))
         if sttr:
             return np.mean(sttr)
         else:
@@ -313,7 +316,7 @@ class LexicalDiversityFeatures:
         if types != 0:
             value = 1 - (hapaxes / types)
             if value != 0:
-                return 100 * math.log(tokens) / value
+                return 100 * math.log10(tokens) / value
             else:
                 return 0
         else:
@@ -329,7 +332,7 @@ class LexicalDiversityFeatures:
     def yule_k(self, tokens, freq_spectrum):
         """Yule (1944): $K = 10^4 \left(-\frac{1}{N} + \sum_{i=1}^N V(i, N) \left( \frac{i}{N}\right)^2 \right)$"""
         if tokens != 0:
-            return 100 * (sum((freq_size * (freq / tokens) ** 2 for freq, freq_size in freq_spectrum.items())) - (1 / tokens))
+            return 10000 * (sum((freq_size * (freq / tokens) ** 2 for freq, freq_size in freq_spectrum.items())) - (1 / tokens))
         else:
             return 0
 
@@ -354,23 +357,28 @@ class LexicalDiversityFeatures:
             return 0
 
     def hdd(self, tokens, frequency_spectrum, sample_size=42):
-        """McCarthy and Jarvis (2010): $HD-D = \sum_{i=1}^{V(N)} \frac{1}{42} \left(1 - \frac{\binom{i}{0} \binom{N - V(i, N)}{42 - 0}}{\binom{N}{42}}\right) = \sum_{i=1}^{V(N)} \frac{1}{42} (1 - \frac{\binom{N - V(i, N)}{42}}{\binom{N}{42}})$"""
-        if sample_size > 0:
-            return sum((((1 - scipy.stats.hypergeom.pmf(0, tokens, freq, sample_size)) / sample_size) for word, freq in frequency_spectrum.items()))
+
+        if tokens >= sample_size and sample_size > 0:
+            total_prob = 0
+
+            for fi, vi in frequency_spectrum.items():
+
+                p_word_in_sample = 1 - scipy.stats.hypergeom.pmf(0, tokens, fi, sample_size)
+
+                total_prob += (p_word_in_sample * vi)
+
+            return total_prob / sample_size
         else:
             return 0
 
-    def evenness(self, entropy, freq_spectrum):
-        """derivated from Pielou's Evenness"""
-
-        if len(freq_spectrum) > 0:
-            math_log_len_spec = math.log(len(freq_spectrum))
-            if math_log_len_spec != 0:
-                return entropy / math_log_len_spec
-            else:
-                return 0
+    def evenness(self, entropy, types):
+        """Pielou's Evenness J = H / ln(V)"""
+        if types > 1:  # V muss größer 1 sein, sonst ist log(V) = 0
+            math_log_v = math.log(types)
+            return entropy / math_log_v
         else:
             return 0
+
 
     def mattr(self, window_size, doc_tokens, n_tokens):
         """Moving-Average Type-Token Ratio (Covington and McFall, 2010).
@@ -467,14 +475,14 @@ class LexicalDiversityFeatures:
         if 'herdan_c' in self.features:
             data['features']['herdan_c'] = self.herdan_c(types=doc._.n_vocab_types, tokens=doc._.n_tokens)
 
-        if 'herdan_c' in self.features:
-            data['features']['herdan_c'] = self.dugast_k(types=doc._.n_vocab_types, tokens=doc._.n_tokens)
+        if 'dugast_k' in self.features:
+            data['features']['dugast_k'] = self.dugast_k(types=doc._.n_vocab_types, tokens=doc._.n_tokens)
 
         if 'maas_a2' in self.features:
             data['features']['maas_a2'] = self.maas_a2(types=doc._.n_vocab_types, tokens=doc._.n_tokens)
 
-        if 'maas_a2' in self.features:
-            data['features']['maas_a2'] = self.dugast_u2(types=doc._.n_vocab_types, tokens=doc._.n_tokens)
+        if 'dugast_u' in self.features:
+            data['features']['dugast_u'] = self.dugast_u(types=doc._.n_vocab_types, tokens=doc._.n_tokens)
 
         if 'tuldava_ln' in self.features:
             data['features']['tuldava_ln'] = self.tuldava_ln(types=doc._.n_vocab_types, tokens=doc._.n_tokens)
@@ -489,7 +497,6 @@ class LexicalDiversityFeatures:
             data['features']['summer_s'] = self.summer_s(types=doc._.n_vocab_types, tokens=doc._.n_tokens)
 
         if 'sttr' in self.features:
-            #data['features']['sttr'] = self.sttr(doc._.n_vocab_types, doc._.tokens, self.window_size)
             data['features']['sttr'] = self.sttr(tokens=doc._.n_tokens, doc_tokens=doc._.tokens, window_size=self.window_size)
 
         # MEASURES THAT USE PART OF THE FREQUENCY SPECTRUM #
@@ -500,8 +507,8 @@ class LexicalDiversityFeatures:
         if 'michea_m' in self.features:
             data['features']['michea_m'] = self.michea_m(types=doc._.n_vocab_types, freq_spectrum=freq_spectrum)
 
-        if 'guiraud_r' in self.features:
-            data['features']['michea_m'] = self.honore_h(tokens=doc._.n_tokens, types=doc._.n_vocab_types, freq_spectrum=freq_spectrum)
+        if 'honore_h' in self.features:
+            data['features']['honore_h'] = self.honore_h(tokens=doc._.n_tokens, types=doc._.n_vocab_types, freq_spectrum=freq_spectrum)
 
         # MEASURES THAT USE THE WHOLE FREQUENCY SPECTRUM #
 
@@ -521,7 +528,7 @@ class LexicalDiversityFeatures:
             data['features']['hdd'] = self.hdd(tokens=doc._.n_tokens, frequency_spectrum=freq_spectrum, sample_size=42)
 
         if 'evenness' in self.features:
-            data['features']['evenness'] = self.evenness(entropy=data['features']['entropy'], freq_spectrum=freq_spectrum)
+            data['features']['evenness'] = self.evenness(entropy=data['features']['entropy'], types=doc._.n_vocab_types)
 
         if 'mattr' in self.features:
             data['features']['mattr'] = self.mattr(window_size=self.window_size, doc_tokens=doc._.tokens, n_tokens=doc._.n_tokens)
@@ -531,6 +538,8 @@ class LexicalDiversityFeatures:
 
         data['lexical_diversity']['freq_list'] = freq_list
         data['lexical_diversity']['corpus_tokens'] = doc._.tokens
+        data['lexical_diversity']['corpus_types'] = doc._.vocab_types
+        data['lexical_diversity']['corpus_lemmata'] = doc._.lemmata
 
         return data
 
@@ -579,7 +588,7 @@ class LexicalDiversityFeatures:
             data['maas_a2'] = self.maas_a2(types=n_types, tokens=corpus.sizes.tokens_cnt)
 
         if 'dugast_u' in self.features:
-            data['dugast_u'] = self.dugast_u2(types=n_types, tokens=corpus.sizes.tokens_cnt)
+            data['dugast_u'] = self.dugast_u(types=n_types, tokens=corpus.sizes.tokens_cnt)
 
         if 'tuldava_ln' in self.features:
             data['tuldava_ln'] = self.tuldava_ln(types=n_types, tokens=corpus.sizes.tokens_cnt)
@@ -628,7 +637,7 @@ class LexicalDiversityFeatures:
             data['hdd'] = self.hdd(tokens=corpus.sizes.tokens_cnt, frequency_spectrum=freq_spectrum, sample_size=42)
 
         if 'evenness' in self.features:
-            data['evenness'] = self.evenness(entropy=data['entropy'], freq_spectrum=freq_spectrum)
+            data['evenness'] = self.evenness(entropy=data['entropy'], types=n_types)
 
         if 'mattr' in self.features:
             data['mattr'] = self.mattr(
@@ -650,6 +659,8 @@ def init_lexical_diversity():
     return {
         'freq_list': collections.Counter({}),
         'corpus_tokens': [],
+        'corpus_types': [],
+        'corpus_lemmata': [],
         'function_words': collections.Counter({})
     }
 
@@ -658,6 +669,10 @@ def update_lexical_diversity(lexical_diversity, data):
         lexical_diversity['freq_list'] += data['freq_list']
     if 'corpus_tokens' in data.keys():
         lexical_diversity['corpus_tokens'] += data['corpus_tokens']
+    if 'corpus_types' in data.keys():
+        lexical_diversity['corpus_types'] += data['corpus_types']
+    if 'corpus_lemmata' in data.keys():
+        lexical_diversity['corpus_lemmata'] += data['corpus_lemmata']
     if 'function_words' in data.keys():
         lexical_diversity['function_words'].update(data['function_words'])
 

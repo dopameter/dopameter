@@ -7,12 +7,24 @@ import os
 
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import LabelEncoder
+from sklearn import preprocessing
 
 from dopameter.analytics.aggregation import ClusterCorpora
 from dopameter.analytics.summarization import df_to_file
-from dopameter.analytics.vis_utils import get_colors, overview_cluster_per_dataset
+from dopameter.analytics.vis_utils import overview_cluster_per_dataset, clean_file_name
 
-def create_plots(dataset, level_to_plot, le, kmeans, pd_x_scaled, n_clusters, feat_name, path_kmeans_feat):
+
+def create_plots_by_kmeans(
+        dataset,
+        level_to_plot,
+        kmeans,
+        pd_x_scaled,
+        n_clusters,
+        feat_name,
+        path_kmeans_feat,
+        n_items,
+        file_format_plots
+    ):
 
     """ create plots for different level of composition of corpora, collection, languages - k-means based plotting
 
@@ -21,7 +33,6 @@ def create_plots(dataset, level_to_plot, le, kmeans, pd_x_scaled, n_clusters, fe
 
         dataset : dataframe
         level_to_plot : array of str
-        le : Any
         kmeans : Any
         pd_x_scaled : dataframe
         n_clusters : int
@@ -32,6 +43,8 @@ def create_plots(dataset, level_to_plot, le, kmeans, pd_x_scaled, n_clusters, fe
         feat_name : str
         path_tsne_feat : str
         get_clusters : Any
+        n_items : int
+        file_format_plots : str
     """
 
     path_kmeans_feat = path_kmeans_feat + os.sep + level_to_plot
@@ -39,12 +52,12 @@ def create_plots(dataset, level_to_plot, le, kmeans, pd_x_scaled, n_clusters, fe
         os.mkdir(path_kmeans_feat)
 
     y = dataset[level_to_plot]
-    label = le.fit_transform(y)
-
-    y_data = kmeans.fit_transform(pd_x_scaled, label)
+    y_data = kmeans.fit_transform(X=pd_x_scaled, y=LabelEncoder().fit_transform(y))
     y_pred = kmeans.predict(pd_x_scaled)
 
-    colors = get_colors(n=n_clusters)
+    n = n_items
+    colors = (sns.color_palette("flare", int(n / 2)) + sns.color_palette("viridis", int(n / 2) + int(n % 2)))
+    colors2 = (sns.color_palette("flare", int(n_clusters / 2)) + sns.color_palette("viridis", int(n_clusters / 2) + int(n_clusters % 2)))
 
     for i in range(n_clusters):
         sns.set(rc={'figure.figsize': (10, 10)})
@@ -52,7 +65,8 @@ def create_plots(dataset, level_to_plot, le, kmeans, pd_x_scaled, n_clusters, fe
             x=y_data[:, 0],
             y=y_data[:, 1],
             hue=y,  # equal to dataset['corpus']
-            s=25
+            s=4,
+            palette=colors,
         ).set(title='K-Means ' + feat_name + ' [' + level_to_plot + ']')
 
         plt.legend(
@@ -61,12 +75,13 @@ def create_plots(dataset, level_to_plot, le, kmeans, pd_x_scaled, n_clusters, fe
             borderaxespad=0
         )
 
-        plt.savefig(
-            path_kmeans_feat + os.sep + feat_name + '_' + level_to_plot + ' _kmeans.png',
-            bbox_inches='tight',
-            format='png'
-        )
-        logging.info('Plot: ' + path_kmeans_feat + os.sep + feat_name + '_all_corpora_kmeans.png')
+        for file_format in file_format_plots:
+            plt.savefig(
+                path_kmeans_feat + os.sep + clean_file_name(feat_name + '_' + level_to_plot + ' _kmeans.' + file_format),
+                bbox_inches='tight',
+                format=file_format
+            )
+            logging.info('Plot: ' + path_kmeans_feat + os.sep + feat_name + '_all_corpora_kmeans.' + file_format)
 
         sns.set_style(style='white')
         sns.set(rc={'figure.figsize': (10, 10)})
@@ -86,9 +101,16 @@ def create_plots(dataset, level_to_plot, le, kmeans, pd_x_scaled, n_clusters, fe
             borderaxespad=0
         )
         plt.title(label="K-Means - feature set '" + feat_name + "' [" + level_to_plot + ']')
-        plt.savefig(path_kmeans_feat + os.sep + feat_name + '_all_corpora_kmeans_Cluster_' + str(i) + '.png', bbox_inches='tight', format='png')
-        logging.info('Plot: ' + path_kmeans_feat + os.sep + feat_name + '_all_corpora_kmeans_Cluster_' + str(i) + '.png')
+
+        for file_format in file_format_plots:
+            plt.savefig(
+                path_kmeans_feat + os.sep + clean_file_name(feat_name + '_all_corpora_kmeans_Cluster_' + str(i) + '.' + file_format),
+                bbox_inches='tight',
+                format=file_format
+            )
+            logging.info('Plot: ' + path_kmeans_feat + os.sep + feat_name + '_all_corpora_kmeans_Cluster_' + str(i) + '.' + file_format)
         plt.close()
+        plt.clf()
 
     if level_to_plot == 'corpus':
         iterate_over = sorted(dataset['corpus'].unique())
@@ -96,6 +118,8 @@ def create_plots(dataset, level_to_plot, le, kmeans, pd_x_scaled, n_clusters, fe
         iterate_over = sorted(dataset['collection'].unique())
     elif level_to_plot == 'language':
         iterate_over = sorted(dataset['language'].unique())
+    else:
+        exit(0)
 
     for c in iterate_over:
 
@@ -105,7 +129,7 @@ def create_plots(dataset, level_to_plot, le, kmeans, pd_x_scaled, n_clusters, fe
                 y_data[y_pred == i, 0],
                 y_data[y_pred == i, 1],
                 label='Cluster ' + str(i),
-                color=colors[i],
+                color=colors2[i],
                 alpha=0.5,
             )
 
@@ -115,8 +139,13 @@ def create_plots(dataset, level_to_plot, le, kmeans, pd_x_scaled, n_clusters, fe
                 borderaxespad=0
             )
         plt.title(label="K-Means - feature set '" + feat_name + "' [" + level_to_plot + '] ')
-        plt.savefig(path_kmeans_feat + os.sep + feat_name + '_kmeans.png', bbox_inches='tight', format='png')
-        logging.info('Plot: ' + path_kmeans_feat + os.sep + feat_name + '_kmeans.png')
+
+        for file_format in file_format_plots:
+            plt.savefig(clean_file_name(path_kmeans_feat + os.sep + feat_name + '_kmeans.' + file_format),
+                bbox_inches='tight',
+                format=file_format
+            )
+            logging.info('Plot: ' + path_kmeans_feat + os.sep + feat_name + '_kmeans.' + file_format)
 
         dataset['x_data'] = y_data[:, 0]
         dataset['y_data'] = y_data[:, 1]
@@ -127,8 +156,8 @@ def create_plots(dataset, level_to_plot, le, kmeans, pd_x_scaled, n_clusters, fe
             hue=dataset[dataset[level_to_plot] == c][level_to_plot],
             palette=['black'],
             marker="2",
-            s=25
-        ).set(title="K-Means - feature set '" + feat_name + "' [" + level_to_plot + '] ')
+            s=4
+        ).set(title="K-Means - feature set '" + feat_name + "' [" + level_to_plot + ']')
 
         plt.legend(
             bbox_to_anchor=(1.02, 1),
@@ -136,14 +165,16 @@ def create_plots(dataset, level_to_plot, le, kmeans, pd_x_scaled, n_clusters, fe
             borderaxespad=0
         )
 
-        plt.savefig(
-            path_kmeans_feat + os.sep + feat_name + '_kmeans_' + c + '.png',
-            bbox_inches='tight',
-            format='png'
-        )
+        for file_format in file_format_plots:
+            plt.savefig(
+                path_kmeans_feat + os.sep + clean_file_name(feat_name + '_kmeans_' + c + '.' + file_format),
+                bbox_inches='tight',
+                format=file_format
+            )
+            logging.info('Plot: ' + path_kmeans_feat + os.sep + feat_name + '_kmeans_' + c + '.' + file_format)
         plt.close()
         plt.clf()
-        logging.info('Plot: ' + path_kmeans_feat + os.sep + feat_name + '_kmeans_' + c + '.png')
+
 
 
 class ClusterKMEANS(ClusterCorpora):
@@ -199,9 +230,11 @@ class ClusterKMEANS(ClusterCorpora):
             tasks,
             file_format_features
         )
+        self.path_kmeans = self.path_clusters + os.sep + 'k-means'
+        if not os.path.isdir(self.path_kmeans):
+            os.mkdir(self.path_kmeans)
 
-
-    def cluster_kmeans_by_feature(self, dataset, feat_name):
+    def cluster_kmeans_by_feature(self, dataset, feat_name, file_format_plots):
         """creates cluster of feature sets of k-means
 
         Parameters
@@ -209,6 +242,7 @@ class ClusterKMEANS(ClusterCorpora):
 
         dataset : dataframe
         feat_name : str
+        file_format_plots : [str]
 
         """
 
@@ -227,7 +261,9 @@ class ClusterKMEANS(ClusterCorpora):
             if self.settings['k-means']['random_state'] == 'None':
                 self.settings['k-means']['random_state'] = None
 
+        logging.info('Load Dataset.')
         dataset = dataset.fillna(0).rename(columns={'Unnamed: 0': 'document'})
+
         logging.info('Dataset loaded.')
 
         path_kmeans_feat = self.path_kmeans + os.sep + feat_name
@@ -236,11 +272,12 @@ class ClusterKMEANS(ClusterCorpora):
 
         n_clusters = self.settings['k-means']['n_clusters']
 
-        from sklearn import preprocessing
-        min_max_scaler = preprocessing.MinMaxScaler()
+        pd_x_scaled = pd.DataFrame(
+            preprocessing.MinMaxScaler().fit_transform(dataset.drop(['document', 'corpus', 'collection', 'language'], axis=1)),
+            columns=dataset.drop(['document', 'corpus', 'collection', 'language'], axis=1).columns
+        )
 
-        x_scaled = min_max_scaler.fit_transform(dataset.drop(['document', 'corpus', 'collection', 'language'], axis=1))
-        pd_x_scaled = pd.DataFrame(x_scaled, columns=dataset.drop(['document', 'corpus', 'collection', 'language'], axis=1).columns)
+        logging.info("Compute k-Means scores with input configuration " + str(self.settings['k-means']))
 
         kmeans = KMeans(
             n_clusters=self.settings['k-means']['n_clusters'],  # n_clusters,
@@ -248,7 +285,6 @@ class ClusterKMEANS(ClusterCorpora):
             n_init=self.settings['k-means']['n_init'],  # 'auto',# default 10  #20,
             max_iter=self.settings['k-means']['max_iter'],  # 300 # default 300
         )
-        le = LabelEncoder()
 
         if 'level' in self.settings.keys():
             level = self.settings['level']
@@ -256,52 +292,75 @@ class ClusterKMEANS(ClusterCorpora):
             level = ['corpus', 'collection', 'language']
 
         if 'corpus' in level:
-            create_plots(
+            create_plots_by_kmeans(
                 dataset=dataset,
                 level_to_plot='corpus',
-                le=le,
                 kmeans=kmeans,
                 pd_x_scaled=pd_x_scaled,
                 n_clusters=n_clusters,
                 feat_name=feat_name,
-                path_kmeans_feat=path_kmeans_feat
+                path_kmeans_feat=path_kmeans_feat,
+                n_items = len(dataset.corpus.value_counts(dropna=False)),
+                file_format_plots=file_format_plots
             )
 
         if sorted(dataset['collection'].unique()) != ['None'] and 'collection' in level:
-            create_plots(
+            create_plots_by_kmeans(
                 dataset=dataset,
                 level_to_plot='collection',
-                le=le,
                 kmeans=kmeans,
                 pd_x_scaled=pd_x_scaled,
                 n_clusters=n_clusters,
                 feat_name=feat_name,
-                path_kmeans_feat=path_kmeans_feat
+                path_kmeans_feat=path_kmeans_feat,
+                n_items=len(dataset.collection.value_counts(dropna=False)),
+                file_format_plots=file_format_plots
             )
 
         if 'language' in level:
-            create_plots(
+            create_plots_by_kmeans(
                 dataset=dataset,
                 level_to_plot='language',
-                le=le,
                 kmeans=kmeans,
                 pd_x_scaled=pd_x_scaled,
                 n_clusters=n_clusters,
                 feat_name=feat_name,
-                path_kmeans_feat=path_kmeans_feat
+                path_kmeans_feat=path_kmeans_feat,
+                n_items=len(dataset.language.value_counts(dropna=False)),
+                file_format_plots=file_format_plots
             )
 
         dataset['cluster'] = kmeans.labels_
+
         df_to_file(
             data=dataset,
             path_file=path_kmeans_feat + os.sep + feat_name + '_cluster_map',
             file_format_features='csv'
         )
 
+        if 'full_cluster_map' in self.settings['k-means'].keys():
+            if not self.settings['k-means']['full_cluster_map']:
+                cluster_map_cut = dataset.drop(dataset.drop(['document', 'corpus', 'collection', 'language'], axis=1).columns, axis=1)
+                cluster_map_cut['cluster'] = kmeans.labels_
+                dataset = cluster_map_cut
+
+                df_to_file(
+                    data=cluster_map_cut,
+                    path_file=path_kmeans_feat + os.sep + feat_name + '_cluster_map',
+                    file_format_features='csv'
+                )
+        else:
+            df_to_file(
+                data=dataset,
+                path_file=path_kmeans_feat + os.sep + feat_name + '_cluster_map',
+                file_format_features='csv'
+            )
+
         overview_cluster_per_dataset(
             data=dataset,
             feature=feat_name,
-            path=path_kmeans_feat
+            path=path_kmeans_feat,
+            file_format_plots=file_format_plots
         )
 
         logging.info('-----------------')

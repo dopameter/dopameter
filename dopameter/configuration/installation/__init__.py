@@ -40,7 +40,7 @@ class ConfLanguages:
         self.benepar_languages = self.config_lang['benepar_languages']
         self.wordnet_languages = self.config_lang['wordnet_languages']
         self.lang_def = self.config_lang['spacy_languages_def']
-        self.heideltime_languages = self.config_lang['heideltime_languages']
+
 
     def install_language_model(self, lang):
         """Installation of a spaCy based language mode
@@ -110,7 +110,7 @@ class ConfLanguages:
                 logging.info("Check the path " + emotion_file + " and your defined language.")
                 return -1
         else:
-            logging.info(em_target_file, 'already exists.')
+            logging.info(em_target_file + 'already exists.')
             return 0
 
     def install_all_possible_language_modules(self, lang):

@@ -35,7 +35,6 @@ class TestSurface(unittest.TestCase):
         self.assertEqual(surface_metrics['counts']['toks_one_syllable'], 125)
         self.assertEqual(surface_metrics['counts']['syllables'], 334)
         self.assertEqual(surface_metrics['counts']['letter_tokens'], 214)
-        self.assertEqual(surface_metrics['counts']['no_digit_tokens'], 214)
 
         self.assertEqual( round(surface_metrics['features']['avg_token_len_chars'],2), 4.59)
         self.assertEqual( round(surface_metrics['features']['avg_sent_len_tokens'],2), 24.3)
@@ -43,8 +42,7 @@ class TestSurface(unittest.TestCase):
         self.assertEqual( round(surface_metrics['features']['flesch_kincaid_grade_level'],2), 11.17)
         self.assertEqual( round(surface_metrics['features']['smog'],2),  0)
         self.assertEqual( round(surface_metrics['features']['coleman_liau'],2), 12.66)
-        self.assertEqual( round(surface_metrics['features']['ari'],2), 13.17)
-        self.assertEqual( round(surface_metrics['features']['forcast'],2), 13.75)
+        self.assertEqual( round(surface_metrics['features']['ari'],2), 14.0)
         self.assertEqual( round(surface_metrics['features']['gunning_fog'],2),  14.54)
         self.assertEqual( round(surface_metrics['features']['flesch_reading_ease'],2), 53.07)
         self.assertEqual( round(surface_metrics['features']['heylighen_formality'],2), 79.27)

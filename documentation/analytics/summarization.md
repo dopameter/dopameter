@@ -1,7 +1,7 @@
 # Summary Analysis
 
 This reporting describes characteristics in connection to the feature sets and can already demonstrate differences between text corpora.
-After the process of metrics computation (resulting _Counts_ and _Metrics_) the DOPA METER is able to summarize scores (e.g., minimum, maximum, averages, quartiles).
+After the process of metrics computation (resulting _Counts_ and _Metrics_) the DOPA METER is able to summarize scores (e.g., _minimum_, _maximum_, _averages_, quartiles).
 
 The output of the task `features` is stored under the configured directories
 * `path_features` ([example](../resources/results/features)),

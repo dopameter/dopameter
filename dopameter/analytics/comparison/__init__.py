@@ -1,4 +1,3 @@
-import collections
 import glob
 import json
 import os
@@ -107,8 +106,10 @@ class CompareAnalytics:
             "portion_difference_all_occurrences"
           ],
         file_format_features=['csv'],
+        file_format_plots=['png', 'svg'],
         most_frequent_words=2000,
         tasks=["compare", "plots"],
+        store_compared_sources=False
     ):
 
         self.path_sources = path_sources
@@ -117,16 +118,36 @@ class CompareAnalytics:
         self.compare_tasks = compare_tasks
 
         self.file_format_features = file_format_features
+        self.file_format_plots = file_format_plots
 
         self.most_frequent_words=most_frequent_words
         self.tasks=tasks
+        self.store_compared_sources=store_compared_sources
 
         if not os.path.isdir(self.path_compare):
             os.mkdir(self.path_compare)
 
-    def source_analytics_corp_col(self, features):
+    def source_analytics_corp_col(self, features, level):
 
         logging.info('tasks: compare')
+        logging.info('level: {}'.format(level))
+
+        if '__' in level:
+            path_compare_level = self.path_compare + os.sep + 'corpora_by_collections' + os.sep
+
+            level = level.split('__')[-1]
+
+            if not os.path.isdir(path_compare_level):
+                os.mkdir(path_compare_level)
+
+        else:
+            path_compare_level = self.path_compare
+
+        #path_compare_level = self.path_compare + os.sep + level + os.sep
+        path_compare_level = path_compare_level + os.sep + level + os.sep
+
+        if not os.path.isdir(path_compare_level):
+            os.mkdir(path_compare_level)
 
         for feat in features.keys():
 
@@ -150,44 +171,61 @@ class CompareAnalytics:
 
                 for c_i in sorted(features[feat].keys()):
 
-                    results['intersection'][c_i] = {}
-                    results['intersection_all_occurrences'][c_i] = {}
-                    results['intersection_data'][c_i] = {}
+                    if level == 'corpora' and c_i in self.corpora.keys():
+                        if 'collection' in self.corpora[c_i].keys():
+                            col_i = ' [' + self.corpora[c_i]['collection'] + ']'
+                        else:
+                            col_i = ''
+                    else:
+                        col_i = ''
 
-                    results['portion_intersection'][c_i] = {}
-                    results['portion_intersection_all_occurrences'][c_i] = {}
 
-                    results['difference'][c_i] = {}
-                    results['difference_all_occurrences'][c_i] = {}
-                    results['difference_data'][c_i] = {}
+                    results['intersection'][c_i + col_i] = {}
+                    results['intersection_all_occurrences'][c_i + col_i] = {}
+                    results['intersection_data'][c_i + col_i] = {}
 
-                    results['portion_difference'][c_i] = {}
-                    results['portion_difference_all_occurrences'][c_i] = {}
+                    results['portion_intersection'][c_i + col_i] = {}
+                    results['portion_intersection_all_occurrences'][c_i + col_i] = {}
+
+                    results['difference'][c_i + col_i] = {}
+                    results['difference_all_occurrences'][c_i + col_i] = {}
+                    results['difference_data'][c_i + col_i] = {}
+
+                    results['portion_difference'][c_i + col_i] = {}
+                    results['portion_difference_all_occurrences'][c_i + col_i] = {}
 
                     for c_j in sorted(features[feat].keys()):
+
+                        if level == 'corpora' and c_i in self.corpora.keys():
+                            if 'collection' in self.corpora[c_j].keys():
+                                col_j = ' [' + self.corpora[c_j]['collection'] + ']'
+                            else:
+                                col_j = ''
+                        else:
+                            col_j = ''
 
                         if len(features[feat][c_i].keys()) != 0:
 
                             if 'intersection' in self.compare_tasks:
                                 intersection = {x: features[feat][c_i][x] for x in features[feat][c_i].keys() if x in features[feat][c_j].keys()}
 
-                                results['intersection'][c_i][c_j] = len(intersection)
-                                results['intersection_all_occurrences'][c_i][c_j] = sum(intersection.values())
-                                results['intersection_data'][c_i][c_j] = intersection
+                                results['intersection'][c_i + col_i][c_j + col_j] = len(intersection)
+                                results['intersection_all_occurrences'][c_i + col_i][c_j + col_j] = sum(intersection.values())
+                                results['intersection_data'][c_i + col_i][c_j + col_j] = intersection
 
                                 # portions
-                                results['portion_intersection'][c_i][c_j] = round(len(intersection) / len(features[feat][c_i].keys()), 2)
-                                results['portion_intersection_all_occurrences'][c_i][c_j] = round(results['intersection_all_occurrences'][c_i][c_j] / len(features[feat][c_i].keys()), 2)
+                                results['portion_intersection'][c_i + col_i][c_j + col_j] = round(len(intersection) / len(features[feat][c_i].keys()), 2)
+                                results['portion_intersection_all_occurrences'][c_i + col_i][c_j + col_j] = round(results['intersection_all_occurrences'][c_i + col_i][c_j + col_j] / sum(features[feat][c_i].values()), 2)
 
-                            if 'differences' in self.compare_tasks:
+                            if 'difference' in self.compare_tasks:
                                 difference = {x: features[feat][c_i][x] for x in features[feat][c_i].keys() if x not in features[feat][c_j].keys()}
-                                results['difference'][c_i][c_j] = len(difference)
-                                results['difference_all_occurrences'][c_i][c_j] = sum(difference.values())
-                                results['difference_data'][c_i][c_j] = difference
+                                results['difference'][c_i + col_i][c_j + col_j] = len(difference)
+                                results['difference_all_occurrences'][c_i + col_i][c_j + col_j] = sum(difference.values())
+                                results['difference_data'][c_i + col_i][c_j + col_j] = difference
 
                                 # difference portions
-                                results['portion_difference'][c_i][c_j] = round(len(difference) / len(features[feat][c_i].keys()), 2)
-                                results['portion_difference_all_occurrences'][c_i][c_j] = round(results['difference_all_occurrences'][c_i][c_j] / len(features[feat][c_i].keys()), 2)
+                                results['portion_difference'][c_i + col_i][c_j + col_j] = round(len(difference) / len(features[feat][c_i].keys()), 2)
+                                results['portion_difference_all_occurrences'][c_i + col_i][c_j + col_j] = round(results['difference_all_occurrences'][c_i + col_i][c_j + col_j] / sum(features[feat][c_i].values()), 2)
                         else:
                             logging.info('Content of feature ' + feat + ' is emtpy!')
 
@@ -203,15 +241,17 @@ class CompareAnalytics:
 
                                 if not data.empty:
 
-                                    path_compare_detail = self.path_compare + os.sep + feat + os.sep
+                                    path_compare_detail = path_compare_level + os.sep + feat + os.sep
                                     if not os.path.isdir(path_compare_detail):
                                         os.mkdir(path_compare_detail)
 
                                     if 'plots' in self.tasks:
+
                                         heatmap_comparison(
                                             data=pd.DataFrame(results[r]),
                                             title=feat + ' ' + r.replace('_', ' '),
-                                            path_plot=path_compare_detail + feat + '_' + r
+                                            path_plot=path_compare_detail + feat + '_' + r,
+                                            file_format_plots=self.file_format_plots
                                         )
 
                                     df_to_file(
@@ -220,7 +260,7 @@ class CompareAnalytics:
                                         file_format_features=self.file_format_features
                                     )
                                 else:
-                                    logging(r + ': data is empty')
+                                    logging.info(r + ': data is empty')
 
                     else:
                         if 'intersection_data' == r and 'intersection' in self.compare_tasks:
@@ -229,12 +269,18 @@ class CompareAnalytics:
                                     if key == val:
                                         results['intersection_data'][key][val] = {}
 
-                            with open(path_compare_detail + os.sep + feat + '_intersection' + '.json', 'w', encoding='utf-8') as f:
-                                json.dump(results['intersection_data'], f, ensure_ascii=False, indent=2)
+                            path_compare_detail = path_compare_level + os.sep + feat + os.sep
+                            if not os.path.isdir(path_compare_detail):
+                                os.mkdir(path_compare_detail)
+
+                            if self.store_compared_sources:
+                                with open(path_compare_detail + os.sep + feat + '_intersection' + '.json', 'w', encoding='utf-8') as f:
+                                    json.dump(results['intersection_data'], f, ensure_ascii=False, indent=2)
 
                         if 'difference_data' == r and 'difference' in self.compare_tasks:
-                             with open(path_compare_detail + os.sep + feat + '_difference' + '.json', 'w', encoding='utf-8') as f:
-                                json.dump(results['difference_data'], f, ensure_ascii=False, indent=2)
+                            if self.store_compared_sources:
+                                 with open(path_compare_detail + os.sep + feat + '_difference' + '.json', 'w', encoding='utf-8') as f:
+                                    json.dump(results['difference_data'], f, ensure_ascii=False, indent=2)
 
             #else:
             if 'bleu' in self.compare_tasks:
@@ -333,7 +379,7 @@ class CompareAnalytics:
 
                 if 'bleu' in self.compare_tasks:
 
-                    path_compare_detail = self.path_compare + os.sep + 'bleu' + os.sep
+                    path_compare_detail = path_compare_level + os.sep + 'bleu' + os.sep
                     if not os.path.isdir(path_compare_detail):
                         os.mkdir(path_compare_detail)
 
@@ -341,7 +387,8 @@ class CompareAnalytics:
                         heatmap_comparison(
                             data=pd.DataFrame(bleu_map),
                             title='bleu scores',
-                            path_plot=path_compare_detail + 'bleu_scores'
+                            path_plot=path_compare_detail + 'bleu_scores',
+                            file_format_plots=self.file_format_plots
                         )
 
                     df_to_file(
@@ -352,7 +399,7 @@ class CompareAnalytics:
 
                 if 'meteor' in self.compare_tasks:
 
-                    path_compare_detail = self.path_compare + os.sep + 'meteor' + os.sep
+                    path_compare_detail = path_compare_level + os.sep + 'meteor' + os.sep
                     if not os.path.isdir(path_compare_detail):
                         os.mkdir(path_compare_detail)
 
@@ -360,7 +407,8 @@ class CompareAnalytics:
                         heatmap_comparison(
                             data=pd.DataFrame(meteor_map),
                             title='meteor scores',
-                            path_plot=path_compare_detail + 'meteor_scores'
+                            path_plot=path_compare_detail + 'meteor_scores',
+                            file_format_plots=self.file_format_plots
                         )
 
                     df_to_file(
@@ -371,7 +419,7 @@ class CompareAnalytics:
 
                 if 'nist' in self.compare_tasks:
 
-                    path_compare_detail = self.path_compare + os.sep + 'nist' + os.sep
+                    path_compare_detail = path_compare_level + os.sep + 'nist' + os.sep
                     if not os.path.isdir(path_compare_detail):
                         os.mkdir(path_compare_detail)
 
@@ -379,7 +427,8 @@ class CompareAnalytics:
                         heatmap_comparison(
                             data=pd.DataFrame(nist_map),
                             title='nist scores',
-                            path_plot=path_compare_detail + 'nist_scores'
+                            path_plot=path_compare_detail + 'nist_scores',
+                            file_format_plots=self.file_format_plots
                         )
 
                     df_to_file(
@@ -390,11 +439,11 @@ class CompareAnalytics:
 
             if feat == 'ngrams_1':
 
-                path_compare_detail = self.path_compare + os.sep + feat + os.sep
+                path_compare_detail = path_compare_level + os.sep + feat + os.sep
                 if not os.path.isdir(path_compare_detail):
                     os.mkdir(path_compare_detail)
 
-                path_compare_distances = self.path_compare + os.sep + 'distances' + os.sep
+                path_compare_distances = path_compare_level + os.sep + 'distances' + os.sep
                 if not os.path.isdir(path_compare_distances):
                     os.mkdir(path_compare_distances)
 
@@ -410,7 +459,8 @@ class CompareAnalytics:
                         heatmap_comparison(
                             data=pd.DataFrame(linear),
                             title='linear distance',
-                            path_plot=path_compare_distances + 'linear_distance'
+                            path_plot=path_compare_distances + 'linear_distance',
+                            file_format_plots=self.file_format_plots
                         )
                     df_to_file(
                         data=pd.DataFrame(linear),
@@ -424,7 +474,8 @@ class CompareAnalytics:
                         heatmap_comparison(
                             data=pd.DataFrame(linear2),
                             title='linear2 distance',
-                            path_plot=path_compare_distances + 'linear2_distance'
+                            path_plot=path_compare_distances + 'linear2_distance',
+                            file_format_plots=self.file_format_plots
                         )
                     df_to_file(
                         data=pd.DataFrame(linear),
@@ -438,7 +489,8 @@ class CompareAnalytics:
                         heatmap_comparison(
                             data=pd.DataFrame(burrows2),
                             title='linear2 distance',
-                            path_plot=path_compare_distances + 'burrows2_distance'
+                            path_plot=path_compare_distances + 'burrows2_distance',
+                            file_format_plots=self.file_format_plots
                         )
                     df_to_file(
                         data=pd.DataFrame(burrows2),
@@ -452,7 +504,8 @@ class CompareAnalytics:
                         heatmap_comparison(
                             data=pd.DataFrame(manhattan),
                             title='manhattan distance',
-                            path_plot=path_compare_distances + 'manhattan_distance'
+                            path_plot=path_compare_distances + 'manhattan_distance',
+                            file_format_plots=self.file_format_plots
                         )
                     df_to_file(
                         data=pd.DataFrame(manhattan),
@@ -466,7 +519,8 @@ class CompareAnalytics:
                         heatmap_comparison(
                             data=pd.DataFrame(euclidean),
                             title='euclidean distance',
-                            path_plot=path_compare_distances + 'euclidean_distance'
+                            path_plot=path_compare_distances + 'euclidean_distance',
+                            file_format_plots=self.file_format_plots
                         )
                     df_to_file(
                         data=pd.DataFrame(euclidean),
@@ -480,7 +534,8 @@ class CompareAnalytics:
                         heatmap_comparison(
                             data=pd.DataFrame(sqeuclidean),
                             title='sqeuclidean distance',
-                            path_plot=path_compare_distances + 'sqeuclidean_distance'
+                            path_plot=path_compare_distances + 'sqeuclidean_distance',
+                            file_format_plots=self.file_format_plots
                         )
                     df_to_file(
                         data=pd.DataFrame(sqeuclidean),
@@ -494,7 +549,8 @@ class CompareAnalytics:
                         heatmap_comparison(
                             data=pd.DataFrame(cosine),
                             title='cosine distance',
-                            path_plot=path_compare_distances + 'cosine_distance'
+                            path_plot=path_compare_distances + 'cosine_distance',
+                            file_format_plots=self.file_format_plots
                         )
                     df_to_file(
                         data=pd.DataFrame(cosine),
@@ -508,7 +564,8 @@ class CompareAnalytics:
                         heatmap_comparison(
                             data=pd.DataFrame(canberra),
                             title='canberra distance',
-                            path_plot=path_compare_distances + 'canberra_distance'
+                            path_plot=path_compare_distances + 'canberra_distance',
+                            file_format_plots=self.file_format_plots
                         )
                     df_to_file(
                         data=pd.DataFrame(canberra),
@@ -522,7 +579,8 @@ class CompareAnalytics:
                         heatmap_comparison(
                             data=pd.DataFrame(braycurtis),
                             title='braycurtis distance',
-                            path_plot=path_compare_distances + 'braycurtis_distance'
+                            path_plot=path_compare_distances + 'braycurtis_distance',
+                            file_format_plots=self.file_format_plots
                         )
                     df_to_file(
                         data=pd.DataFrame(braycurtis),
@@ -535,7 +593,8 @@ class CompareAnalytics:
                         heatmap_comparison(
                             data=pd.DataFrame(correlation),
                             title='correlation distance',
-                            path_plot=path_compare_distances + 'correlation_distance'
+                            path_plot=path_compare_distances + 'correlation_distance',
+                            file_format_plots=self.file_format_plots
                         )
                     df_to_file(
                         data=pd.DataFrame(correlation),
@@ -549,7 +608,8 @@ class CompareAnalytics:
                         heatmap_comparison(
                             data=pd.DataFrame(chebyshev),
                             title='chebyshev distance',
-                            path_plot=path_compare_distances + 'chebyshev_distance'
+                            path_plot=path_compare_distances + 'chebyshev_distance',
+                            file_format_plots=self.file_format_plots
                         )
                     df_to_file(
                         data=pd.DataFrame(chebyshev),
@@ -563,7 +623,8 @@ class CompareAnalytics:
                         heatmap_comparison(
                             data=pd.DataFrame(burrows),
                             title='burrows distance',
-                            path_plot=path_compare_distances + 'burrows_distance'
+                            path_plot=path_compare_distances + 'burrows_distance',
+                            file_format_plots=self.file_format_plots
                         )
                     df_to_file(
                         data=pd.DataFrame(burrows),
@@ -577,7 +638,8 @@ class CompareAnalytics:
                         heatmap_comparison(
                             data=pd.DataFrame(quadratic),
                             title='quadratic distance',
-                            path_plot=path_compare_distances + 'quadratic_distance'
+                            path_plot=path_compare_distances + 'quadratic_distance',
+                            file_format_plots=self.file_format_plots
                         )
                     df_to_file(
                         data=pd.DataFrame(quadratic),
@@ -591,7 +653,8 @@ class CompareAnalytics:
                         heatmap_comparison(
                             data=pd.DataFrame(eder),
                             title='eder distance',
-                            path_plot=path_compare_distances + 'eder_distance'
+                            path_plot=path_compare_distances + 'eder_distance',
+                            file_format_plots=self.file_format_plots
                         )
                     df_to_file(
                         data=pd.DataFrame(eder),
@@ -605,15 +668,14 @@ class CompareAnalytics:
                         heatmap_comparison(
                             data=pd.DataFrame(cosine_delta),
                             title='cosine_delta distance',
-                            path_plot=path_compare_distances + 'cosine_delta_distance'
+                            path_plot=path_compare_distances + 'cosine_delta_distance',
+                            file_format_plots=self.file_format_plots
                         )
                     df_to_file(
                         data=pd.DataFrame(cosine_delta),
                         path_file=path_compare_distances + 'cosine_delta_distance',
                         file_format_features=self.file_format_features
                     )
-
-
 
     def source_analytics(self):
         """Computation of comparison mode"""
@@ -622,35 +684,116 @@ class CompareAnalytics:
         if not files:
             logging.warning(self.path_sources + " contains no files. Modus 'compare' not started.")
 
-        features = {}
-        features_col = {}
+        self.source_analytics_corpora(files=files)
+        self.source_analytics_collections(files=files)
+        self.source_analytics_corpora_by_collections(files=files)
+
+
+    def source_analytics_corpora(self, files):
+
+        logging.info('corpus comparison by corpora')
+
+        features_corpora = {}
 
         for f in files:
 
-            #logging.info('Open file with source: ' + f)
             corpus = f.replace(self.path_sources + os.sep, '').split(os.sep)[0]
             feature = f.replace(self.path_sources + os.sep, '').split(os.sep)[1].replace(corpus + '__', '').replace('.json', '')
 
-            if feature not in features.keys():
-                features[feature] = {}
-                features_col[feature] = {}
+            if feature not in features_corpora.keys():
+                features_corpora[feature] = {}
+
+            if corpus in self.corpora.keys():
+                features_corpora[feature][corpus] = f
+
+        for feature in features_corpora:
+            fc = {feature: {}}
+            for corpus in features_corpora[feature]:
+                with (open(features_corpora[feature][corpus], encoding='utf-8') as json_file):
+                    content = json.load(json_file)
+                    if content != {}:
+                        fc[feature][corpus] = content
+                    else:
+                        logging.info('Content of ' + features_corpora[feature][corpus] + ' is empty! It is not loaded.')
+
+            self.source_analytics_corp_col(features=fc, level='corpora')
+
+
+    def source_analytics_collections(self, files):
+
+        logging.info('corpus comparison by collections')
+
+        features_collections = {}
+
+        for f in files:
+
+            corpus = f.replace(self.path_sources + os.sep, '').split(os.sep)[0]
+            feature = f.replace(self.path_sources + os.sep, '').split(os.sep)[1].replace(corpus + '__', '').replace('.json', '')
+
+            if feature not in features_collections.keys():
+                features_collections[feature] = {}
 
             if corpus in self.corpora.keys():
                 logging.info('Open file with source: ' + f)
 
-                with (open(f, encoding='utf-8') as json_file):
+                features_collections[feature][corpus] = f
+
+        for feature in features_collections:
+            fc = {feature: {}}
+            for corpus in features_collections[feature]:
+
+                with (open(features_collections[feature][corpus], encoding='utf-8') as json_file):
                     content = json.load(json_file)
                     if content != {}:
-                        features[feature][corpus] = content
+                        #features_corpora[feature][corpus] = content
                         if 'collection' in self.corpora[corpus]:
-
-                            if self.corpora[corpus]['collection'] not in features_col[feature].keys():
-                                features_col[feature][self.corpora[corpus]['collection']] = content
-                                #features_col[feature][self.corpora[corpus]['collection']] = collections.Counter(content)
+                            if self.corpora[corpus]['collection'] not in features_collections[feature].keys():
+                                fc[feature][self.corpora[corpus]['collection']] = content
                             else:
-
-                                features_col[feature][self.corpora[corpus]['collection']] = dict(list(features_col[feature][self.corpora[corpus]['collection']].items()) + list(content.items()))
+                                fc[feature][self.corpora[corpus]['collection']] = dict(list(fc[feature][self.corpora[corpus]['collection']].items()) + list(content.items()))
                     else:
                         logging.info('Content of ' + f + ' is empty! It is not loaded.')
 
-        self.source_analytics_corp_col(dict(features_col))
+            self.source_analytics_corp_col(features=dict(fc), level='collections')
+
+
+    def source_analytics_corpora_by_collections(self, files):
+
+        logging.info('corpus comparison by corpora over collections')
+
+        features_corpora_by_collections = {}
+
+        for f in files:
+
+            corpus = f.replace(self.path_sources + os.sep, '').split(os.sep)[0]
+            feature = f.replace(self.path_sources + os.sep, '').split(os.sep)[1].replace(corpus + '__', '').replace('.json', '')
+
+            if corpus in self.corpora.keys():
+                logging.info('Open file with source: ' + f)
+
+                if 'collection' in self.corpora[corpus]:
+                    if self.corpora[corpus]['collection'] not in features_corpora_by_collections.keys():
+                        features_corpora_by_collections[self.corpora[corpus]['collection']] = {}
+                    if feature not in features_corpora_by_collections[self.corpora[corpus]['collection']].keys():
+                        features_corpora_by_collections[self.corpora[corpus]['collection']][feature] = {}
+                    features_corpora_by_collections[self.corpora[corpus]['collection']][feature][corpus] = f
+
+        for collection in features_corpora_by_collections:
+            for feature in features_corpora_by_collections[collection]:
+                fc = {feature: {}}
+                #with (open(f, encoding='utf-8') as json_file):
+
+                for corpus in features_corpora_by_collections[collection][feature]:
+
+                    with (open(features_corpora_by_collections[collection][feature][corpus], encoding='utf-8') as json_file):
+                        content = json.load(json_file)
+                        if content != {}:
+                            fc[feature][corpus] = content
+                        else:
+                            logging.info('Content of ' + f + ' is empty! It is not loaded.')
+
+
+                self.source_analytics_corp_col(
+                    features=dict(fc),
+                    level='corpora_by_collections' + '__' + collection
+                )

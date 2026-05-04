@@ -1,10 +1,14 @@
+import collections
 import pandas as pd
 import os
 import io
 import logging
+import re
 
+from dopameter.analytics.vis_utils import create_corpus_analysis_plot, heatmap_comparison
 from dopameter.configuration.installation import ConfLanguages
 
+ILLEGAL_CHARACTERS_RE = re.compile(r'[\000-\010]|[\013-\014]|[\016-\037]')
 
 def features_to_file(path_features, feat, df_corpus_features, corpus, file_format_features):
     """features output: write features of a set of metrics or counts in a table formatted file
@@ -46,9 +50,10 @@ def df_to_file(data, path_file, file_format_features):
         logging.info('Table: ' + path_file + '.csv')
     if 'excel' in file_format_features or 'xlsx' in file_format_features:
         try:
+            #data = data.fillna('').astype(str).applymap(lambda x: ILLEGAL_CHARACTERS_RE.sub('', x))
             data.to_excel(path_file + '.xlsx', engine='openpyxl')
             logging.info('Table: ' + path_file + '.xlsx')
-        except ValueError:
+        except: #ValueError:
             logging.warning('Warning: ' + path_file + '.xlsx is not produced!')
             if 'csv' not in file_format_features:
                 data.to_csv(path_file + '.csv')
@@ -56,9 +61,7 @@ def df_to_file(data, path_file, file_format_features):
 
         logging.info(path_file + '.xlsx')
     if 'latex' in file_format_features or 'tex' in file_format_features:
-        f = open(path_file + '.tex', 'w')
-        f.write(data.style.to_latex())
-        f.close()
+        data.to_latex(path_file + '.tex')
         logging.info('Table: '+ path_file + '.tex')
     if 'html' in file_format_features:
         data.to_html(path_file + '.html')
@@ -97,9 +100,17 @@ def macro_df_to_file(data, path_file, file_format_features):
             df = pd.read_excel(io=path_file + '.xlsx', index_col='corpus', engine='openpyxl')
             data = pd.concat([data, df])
             data = (data.reset_index().drop_duplicates(keep='last').set_index('corpus').sort_index())
-            data.to_excel(io=path_file + '.xlsx', engine='openpyxl')
-            logging.info('Table: ' + path_file + '.xlsx')
-            logging.warning('\tCheck the .xlsx output file - removing duplicates is not working well by .xlsx formats!',)
+
+            try:
+                data.to_excel(path_file + '.xlsx', engine='openpyxl')
+                logging.info('Table: ' + path_file + '.xlsx')
+                logging.warning('\tCheck the .xlsx output file - removing duplicates is not working well by .xlsx formats!')
+            except:  # ValueError:
+                logging.warning('Warning: ' + path_file + '.xlsx is not produced!')
+                if 'csv' not in file_format_features:
+                    data.to_csv(path_file + '.csv')
+                    logging.info('Table: ' + path_file + '.csv')
+
         else:
             df_to_file(
                 data=data,
@@ -122,8 +133,10 @@ def macro_df_to_file(data, path_file, file_format_features):
         )
         logging.warning('\tIf there has been an old html file, it is overwritten.')
 
+    return data
 
-def sum_all_corpora_to_file(path_counts, sum_all_corpora_counts, feature_name, file_format_features, corpus_name, collection, language):
+
+def sum_all_corpora_to_file(path_counts, sum_all_corpora_counts, feature_name, file_format_features, corpus_name, collection, language, tasks):
     """write scores of summation of all corpora
     Parameters
     ----------
@@ -169,7 +182,7 @@ def sum_all_corpora_to_file(path_counts, sum_all_corpora_counts, feature_name, f
     )
 
 
-def macro_features_to_file(path_summary, corpus, feature_name, file_format_features):
+def macro_features_to_file(path_summary, corpus, feature_name, file_format_features, tasks, file_format_plots):
     """write macro feature tables
 
     Parameters
@@ -178,38 +191,58 @@ def macro_features_to_file(path_summary, corpus, feature_name, file_format_featu
     corpus : corpus
     feature_name : str
     file_format_features : str
+    tasks : list
+    file_format_plots : str
     """
 
     macro_corpus_feats = pd.DataFrame({corpus.name: corpus.macro_features}).transpose().to_dict()
 
-    path_sum_lang = path_summary + os.sep + 'macro_scores_language'
-    if not os.path.isdir(path_sum_lang):
-        os.mkdir(path_sum_lang)
-    path_sum_coll = path_summary + os.sep + 'macro_scores_collections'
-    if not os.path.isdir(path_sum_coll):
-        os.mkdir(path_sum_coll)
-    path_sum_corp = path_summary + os.sep + 'macro_scores_corpora'
-    if not os.path.isdir(path_sum_corp):
-        os.mkdir(path_sum_corp)
+    if hasattr(corpus, 'collections'):  # language
+        path_sum_level = path_summary + os.sep + 'macro_scores_language'
 
+    elif not hasattr(corpus, 'collection_name') and not hasattr(corpus, 'collections'):
+        path_sum_level = path_summary + os.sep + 'macro_scores_collections'
+
+
+    else:
+        path_sum_level = path_summary + os.sep + 'macro_scores_corpora'
+    if not os.path.isdir(path_sum_level):
+        os.mkdir(path_sum_level)
+
+    sum_type = ''
     if feature_name == 'corpus_characteristics':
-        macro_corpus_feats_file = path_summary + os.sep + 'corpora_characteristics_counts'
+
+        if hasattr(corpus, 'collections'):
+            macro_corpus_feats_file = path_summary + os.sep + 'languages_characteristics_counts'
+            sum_type = 'language'
+        elif hasattr(corpus, 'collection_name'):
+            macro_corpus_feats_file = path_summary + os.sep + 'corpora_characteristics_counts'
+            sum_type = 'corpus'
+        else:
+            macro_corpus_feats_file = path_summary + os.sep + 'collections_characteristics_counts'
+            sum_type = 'collection'
+
         df_corpus_feats = pd.DataFrame(
             macro_corpus_feats[feature_name],
             index=macro_corpus_feats[feature_name][list(macro_corpus_feats[feature_name].keys())[0]].keys()
         ).transpose()
+
     else:
 
         filtered_dict = {c: macro_corpus_feats[feature_name][c]['features'] for c in macro_corpus_feats[feature_name]}
+        path_sum_level = path_sum_level + os.sep + feature_name
+
+        if not os.path.isdir(path_sum_level):
+            os.mkdir(path_sum_level)
 
         if not hasattr(corpus, 'collection_name') and not hasattr(corpus, 'collections'):
             filtered_dict = {k : filtered_dict[k] for k in filtered_dict}
-            macro_corpus_feats_file = path_sum_coll + os.sep + 'collection_characteristics_' + feature_name
+            macro_corpus_feats_file = path_sum_level + os.sep + 'collection_characteristics_' + feature_name
         elif hasattr(corpus, 'collections'):
             filtered_dict = {k:filtered_dict[k] for k in filtered_dict }
-            macro_corpus_feats_file = path_sum_lang + os.sep + 'language_characteristics_' + feature_name
+            macro_corpus_feats_file = path_sum_level + os.sep + 'language_characteristics_' + feature_name
         else:
-            macro_corpus_feats_file = path_sum_corp + os.sep + 'corpora_characteristics_' + feature_name
+            macro_corpus_feats_file = path_sum_level + os.sep + 'corpora_characteristics_' + feature_name
 
         df_corpus_feats = pd.DataFrame(filtered_dict).transpose()
 
@@ -219,8 +252,7 @@ def macro_features_to_file(path_summary, corpus, feature_name, file_format_featu
         if hasattr(corpus, 'collections') and corpus.corpora:
             df_corpus_feats.insert(loc=0, column='collection of corpora', value=str([cor.name for cor in corpus.corpora]))
 
-
-    if hasattr(corpus, 'collections'):
+    if hasattr(corpus, 'collections'):  # language
         df_corpus_feats.insert(loc=0, column='bundle of collections', value=str([cor for cor in corpus.collections]))
         df_corpus_feats.insert(loc=0, column='bundle of corpora', value=str([corp.name for col in corpus.collections for corp in corpus.collections[col].corpora]))
 
@@ -228,7 +260,7 @@ def macro_features_to_file(path_summary, corpus, feature_name, file_format_featu
         # collection
         if not hasattr(corpus, 'collection_name') and not hasattr(corpus, 'collections'):
             df_corpus_feats.insert(loc=0, column='language', value=ConfLanguages().lang_def[corpus.lang])
-            df_corpus_feats.insert(loc=0, column='bundle of corpora ', value=str([col.name for col in corpus.corpora]))
+            df_corpus_feats.insert(loc=0, column='bundle of corpora', value=str([col.name for col in corpus.corpora]))
         else:
             # corpus
             df_corpus_feats.insert(loc=0, column='language', value=ConfLanguages().lang_def[corpus.lang])
@@ -238,8 +270,80 @@ def macro_features_to_file(path_summary, corpus, feature_name, file_format_featu
     if feature_name in ['emotion', 'lexical_diversity', 'surface', 'ner', 'pos', 'token_characteristics']:
         df_corpus_feats = df_corpus_feats.round(4)
 
-    macro_df_to_file(
+    data = macro_df_to_file(
         data=df_corpus_feats,
         path_file=macro_corpus_feats_file,
         file_format_features=file_format_features
     )
+
+    if feature_name == 'corpus_characteristics':
+
+        if sum_type == 'language':
+            df_corpus_feats = df_corpus_feats.drop(columns=[
+                'bundle of collections',
+                'bundle of corpora',
+                'avg_sentences_per_doc',
+                'avg_tokens_per_doc',
+                'avg_characters_per_doc'
+                ]
+            )
+
+        if sum_type == 'collection':
+            df_corpus_feats = df_corpus_feats.drop(columns=[
+                'language',
+                'bundle of corpora',
+                'avg_sentences_per_doc',
+                'avg_tokens_per_doc',
+                'avg_characters_per_doc'
+                ]
+            )
+
+        if sum_type == 'corpus':
+
+            if 'collection' in df_corpus_feats.columns:
+
+                new_data = data.transpose().to_dict()
+                new_data2 = {}
+                new_data3 = {}
+
+                for corpus in new_data:
+                    new_data2['[' + new_data[corpus]['collection'] + '] ' + corpus] = new_data[corpus]
+
+                    if new_data[corpus]['collection'] not in new_data3.keys():
+                        new_data3[new_data[corpus]['collection']] = {}
+                    new_data3[new_data[corpus]['collection']][corpus] = new_data[corpus]
+
+                for collection in new_data3:
+                    df_collis = pd.DataFrame.from_dict(new_data3[collection]).transpose().drop(columns=[
+                                'language',
+                                'collection',
+                                'avg_sentences_per_doc',
+                                'avg_tokens_per_doc',
+                                'avg_characters_per_doc'
+                                ]
+                            )
+
+                    create_corpus_analysis_plot(
+                        data=df_collis,
+                        path_summary=path_summary,
+                        file_format_plots=file_format_plots,
+                        sum_type=sum_type + '__' + collection
+                    )
+
+                df_corpus_feats = pd.DataFrame.from_dict(new_data2).transpose().sort_index(ascending=False)
+
+            df_corpus_feats = df_corpus_feats.drop(columns=[
+                'language',
+                'collection',
+                'avg_sentences_per_doc',
+                'avg_tokens_per_doc',
+                'avg_characters_per_doc'
+                ]
+            )
+
+        create_corpus_analysis_plot(
+            data=df_corpus_feats,
+            path_summary=path_summary,
+            file_format_plots=file_format_plots,
+            sum_type=sum_type
+        )

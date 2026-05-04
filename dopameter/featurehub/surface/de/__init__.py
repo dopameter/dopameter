@@ -1,4 +1,6 @@
 import collections
+import json
+import os
 
 import numpy as np
 import logging
@@ -90,7 +92,7 @@ class SurfaceFeaturizesDE(SurfaceFeaturizes):
           "toks_one_syllable",
           "syllables",
           "letter_tokens",
-          "no_digit_tokens",
+          "no_punct_tokens",
           "avg_token_len_chars",
           "avg_sent_len_tokens",
           "avg_sent_len_chars",
@@ -136,6 +138,7 @@ class SurfaceFeaturizesDE(SurfaceFeaturizes):
             else:
                 logging.info('\t\tDefined features: ' + features)
                 self.features = features
+        self.syllables = {}
 
     def flesch_reading_ease(self, cnt_sentences, cnt_words, cnt_syllables):
         """Get German Flesch-Kincaid Reading Ease score
@@ -160,17 +163,16 @@ class SurfaceFeaturizesDE(SurfaceFeaturizes):
 
         return 180 - words_per_sent - (58.5 * syllables_per_word)
 
-    def wiener_sachtext(self, len_doc, sent_lenghts, toks_min_three_syllables, toks_larger_six_letters, toks_one_syllable):
+    def wiener_sachtext(self, len_doc, sent_lenghts, cnts_toks_min_three_syllables, cnts_toks_larger_six_letters, cnts_toks_one_syllable):
         """Get values of the four Wiener Sachtext formulas (Richard Bamberger and Erich Vanecek, 1984)
 
         Parameters
         ----------
         len_doc : length of a document (int)
         sent_lenghts : array of sentences lenghts of documents (array of int)
-        toks_min_three_syllables : token with minimum of 3 syllables
-        syllables_per_word : array of syllables per word (array of int)
-        toks_larger_six_letters : array of tokens larger than six characters (array of string)
-        toks_one_syllable : tokens with exact 1 syllable
+        cnts_toks_min_three_syllables : token with minimum of 3 syllables
+        cnts_toks_larger_six_letters : array of tokens larger than six characters (array of string)
+        cnts_toks_one_syllable : tokens with exact 1 syllable
 
         Returns
         -------
@@ -181,20 +183,17 @@ class SurfaceFeaturizesDE(SurfaceFeaturizes):
         """
 
         if len_doc > 0:
-            ms = len(toks_min_three_syllables) / len_doc
+            ms = (cnts_toks_min_three_syllables / len_doc) * 100
             sl = np.mean(sent_lenghts)
-            iw = len(toks_larger_six_letters) / len_doc
-            es = len(toks_one_syllable) / len_doc
+            iw = (cnts_toks_larger_six_letters / len_doc) * 100
+            es = (cnts_toks_one_syllable / len_doc) * 100
         else:
-            ms = 0
-            sl = 0
-            iw = 0
-            es = 0
+            return 0
 
-        wstf_1 = (0.1935 * ms) + (0.16772 * sl) + (0.1297 * iw) - (0.0327 * es) - 0.875
+        wstf_1 = (0.1935 * ms) + (0.1672 * sl) + (0.1297 * iw) - (0.0327 * es) - 0.875
         wstf_2 = (0.2007 * ms) + (0.1682 * sl) + (0.1373 * iw) - 2.779
         wstf_3 = (0.2963 * ms) + (0.1905 * sl) - 1.1144
-        wstf_4 = 0.2744 * (ms + 0.2656) * (sl - 1.693)
+        wstf_4 = (0.2744 * ms) + (0.2656 * sl) - 1.693
 
         return wstf_1, wstf_2, wstf_3, wstf_4
 
@@ -223,11 +222,16 @@ class SurfaceFeaturizesDE(SurfaceFeaturizes):
             else:
                 data['features']['avg_token_len_chars'] = 0
 
+        data['surface']['token_len_chars'] = token_len_chars
+
+
         if 'avg_sent_len_tokens' in self.features:
             if sent_len_tokens:
                 data['features']['avg_sent_len_tokens'] = np.mean(sent_len_tokens)
             else:
                 data['features']['avg_sent_len_tokens'] = 0
+
+        data['surface']['sent_len_tokens'] = sent_len_tokens
 
         if 'avg_sent_len_chars' in self.features:
             if sent_len_chars:
@@ -235,25 +239,28 @@ class SurfaceFeaturizesDE(SurfaceFeaturizes):
             else:
                 data['features']['avg_sent_len_chars'] = 0
 
+        data['surface']['sent_len_chars'] = sent_len_chars
+
         cnt_sentences = len(list(doc.sents))
+        cnt_no_punct_tokens = sum([len(token) for token in doc if not token.is_punct])
+        #cnt_letter_tokens = sum([len(token) for token in doc if not token.is_punct and not token.is_digit])
         cnt_letter_tokens = sum([len(token) for token in doc if not token.is_punct and not token.is_digit])
-        cnt_no_digit_tokens = sum([len(token) for token in doc if not token.is_punct])
 
         syllables_per_word = [0 if s is None else s for s in [token._.syllables_count for token in doc]]
 
         # Inputs @ Wiener Sachtextformulas
-        toks_min_three_syllables = [token.text for token in doc if token._.syllables is not None and len(token._.syllables) >= 3]
-        toks_larger_six_letters = [tok.text for tok in doc if len(tok.text) > 6]
-        toks_one_syllable = [token.text for token in doc if token._.syllables is not None and len(token._.syllables) == 1]#[tok == 1 for tok in syllables_per_word]
+        cnt_toks_min_three_syllables = len([token.text for token in doc if token._.syllables is not None and len(token._.syllables) >= 3])
+        cnt_toks_larger_six_letters = len([tok.text for tok in doc if len(tok.text) > 6])
+        cnt_toks_one_syllable = len([token.text for token in doc if token._.syllables is not None and len(token._.syllables) == 1])#[tok == 1 for tok in syllables_per_word]
 
         if 'toks_min_three_syllables' in self.features:
-            data['features']['toks_min_three_syllables'] = len(toks_min_three_syllables) / len(doc)
+            data['features']['toks_min_three_syllables'] = cnt_toks_min_three_syllables / len(doc)
 
         if 'toks_larger_six_letters' in self.features:
-            data['features']['toks_larger_six_letters'] = len(toks_larger_six_letters) / len(doc)
+            data['features']['toks_larger_six_letters'] = cnt_toks_larger_six_letters / len(doc)
 
         if 'toks_one_syllable' in self.features:
-            data['features']['toks_one_syllable'] = len(toks_one_syllable) / len(doc)
+            data['features']['toks_one_syllable'] = cnt_toks_one_syllable / len(doc)
 
         if 'flesch_kincaid_grade_level' in self.features:
             data['features']['flesch_kincaid_grade_level'] = self.flesch_kincaid_grade_level(cnt_sentences, doc._.cnt_syllables, doc._.cnt_words)
@@ -265,7 +272,7 @@ class SurfaceFeaturizesDE(SurfaceFeaturizes):
             data['features']['coleman_liau'] = self.coleman_liau(cnt_sentences, doc._.cnt_words, cnt_letter_tokens)
 
         if 'ari' in self.features:
-            data['features']['ari'] = self.ari(cnt_sentences, doc._.cnt_words, cnt_no_digit_tokens)
+            data['features']['ari'] = self.ari(cnt_sentences, doc._.cnt_words, cnt_no_punct_tokens)
 
         temp = []
         segments = []
@@ -280,7 +287,7 @@ class SurfaceFeaturizesDE(SurfaceFeaturizes):
             segments.append(temp)
 
         if 'forcast' in self.features:
-            data['features']['forcast'] = self.forcast(doc._.cnt_words, segments)
+            data['features']['forcast'], data['surface']['forcast_values'] = self.forcast(doc._.cnt_words, segments)
 
         if 'gunning_fog' in self.features:
             data['features']['gunning_fog'] = self.gunning_fog(cnt_sentences, doc._.cnt_words, syllables_per_word)
@@ -288,9 +295,9 @@ class SurfaceFeaturizesDE(SurfaceFeaturizes):
         wstf_1, wstf_2, wstf_3, wstf_4 = self.wiener_sachtext(
             doc._.n_tokens,
             sent_len_tokens,
-            toks_min_three_syllables,
-            toks_larger_six_letters,
-            toks_one_syllable
+            cnt_toks_min_three_syllables,
+            cnt_toks_larger_six_letters,
+            cnt_toks_one_syllable
         )
 
         if 'wiener_sachtextformel_1' in self.features:
@@ -313,38 +320,32 @@ class SurfaceFeaturizesDE(SurfaceFeaturizes):
         if 'heylighen_formality' in self.features:
             data['features']['heylighen_formality'] = self.get_heylighen_formality_score(cnt_pos)
 
-        data['surface']['toks_min_three_syllables'] = collections.Counter(toks_min_three_syllables)
-        data['surface']['toks_larger_six_letters'] = collections.Counter(toks_larger_six_letters)
-        data['surface']['toks_one_syllable'] = collections.Counter(toks_one_syllable)
-
-        data['surface']['token_len_chars'] = token_len_chars
-        data['surface']['sent_len_tokens'] = sent_len_tokens
-        data['surface']['sent_len_chars'] = sent_len_chars
-
-        data['surface']['cnt_syllables'] = doc._.cnt_syllables
+        data['surface']['cnt_syllables'] = doc._.cnt_syllables # für Flesch-Metriken
         data['surface']['cnt_words'] = doc._.cnt_words # number of words of a document with filtered punctuation
         data['surface']['cnt_poly_syllables'] = doc._.cnt_poly_syllables
         data['surface']['cnt_letter_tokens'] = cnt_letter_tokens
-        data['surface']['cnt_no_digit_tokens'] = cnt_no_digit_tokens
+        data['counts']['letter_tokens'] = cnt_letter_tokens  # sum(data['surface']['letter_tokens'].values())
 
         data['surface']['syllables_per_word'] = syllables_per_word
         data['surface']['cnt_pos'] = cnt_pos
-        data['surface']['segments'] = segments
 
         data['surface']['syllables'] = collections.Counter([i for g in [word._.syllables for word in (word for word in doc if not word.is_punct and "'" not in word.text and word._.syllables != None)] for i in g])
-        data['surface']['letter_tokens'] = collections.Counter([token.text for token in doc if not token.is_punct and not token.is_digit])
-        data['surface']['no_digit_tokens'] = collections.Counter([token.text for token in doc if not token.is_punct])
-        data['surface']['sentences'] = collections.Counter([sent.text for sent in doc.sents])
-
-        data['counts']['toks_min_three_syllables'] = len(toks_min_three_syllables)
-        data['counts']['toks_larger_six_letters'] = len(toks_larger_six_letters)
-        data['counts']['toks_one_syllable'] = len(toks_one_syllable)
-
         data['counts']['syllables'] = sum(data['surface']['syllables'].values())
-        data['counts']['letter_tokens'] = sum(data['surface']['letter_tokens'].values())
-        data['counts']['no_digit_tokens'] = sum(data['surface']['no_digit_tokens'].values())
+
+        data['surface']['cnt_toks_min_three_syllables'] = cnt_toks_min_three_syllables
+        data['counts']['toks_min_three_syllables'] = cnt_toks_min_three_syllables
+
+        data['surface']['cnt_toks_larger_six_letters'] = cnt_toks_larger_six_letters
+        data['counts']['toks_larger_six_letters'] = cnt_toks_larger_six_letters
+
+        data['surface']['cnt_toks_one_syllable'] = cnt_toks_one_syllable
+        data['counts']['toks_one_syllable'] = cnt_toks_one_syllable
+
+        data['surface']['cnt_no_punct_tokens'] = cnt_no_punct_tokens
+        data['counts']['no_punct_tokens'] = cnt_no_punct_tokens #sum(data['surface']['no_punct_tokens'].values())
 
         return data
+
 
     def feat_corpus(self, corpus):
 
@@ -361,21 +362,6 @@ class SurfaceFeaturizesDE(SurfaceFeaturizes):
         """
 
         data = {'features': {}}
-
-        new_list = []
-        for el in corpus.resources.surface['segments']:
-            new_list.extend(el)
-
-        corpus_segments = []
-        temp = []
-        for i, tok in enumerate(new_list):
-            if tok.text != '\n':
-                temp.append(tok)
-            if len(temp) == 150:
-                corpus_segments.append(temp)
-                temp = []
-        if temp:
-            corpus_segments.append(temp)
 
         if 'avg_token_len_chars' in self.features:
             if corpus.resources.surface['token_len_chars']:
@@ -428,6 +414,7 @@ class SurfaceFeaturizesDE(SurfaceFeaturizes):
             )
 
         if 'coleman_liau' in self.features:
+
             data['features']['coleman_liau'] = self.coleman_liau(
                 corpus.sizes.sentences_cnt,
                 corpus.resources.surface['cnt_words'],
@@ -438,14 +425,11 @@ class SurfaceFeaturizesDE(SurfaceFeaturizes):
             data['features']['ari'] = self.ari(
                 corpus.sizes.sentences_cnt,
                 corpus.resources.surface['cnt_words'],
-                corpus.resources.surface['cnt_no_digit_tokens']
+                corpus.resources.surface['cnt_no_punct_tokens']
             )
 
         if 'forcast' in self.features:
-            data['features']['forcast'] = self.forcast(
-                corpus.resources.surface['cnt_words'],
-                corpus_segments
-            )
+            data['features']['forcast'] = np.mean(corpus.resources.surface['forcast_values'])
 
         if 'gunning_fog' in self.features:
             data['features']['gunning_fog'] = self.gunning_fog(
@@ -455,11 +439,12 @@ class SurfaceFeaturizesDE(SurfaceFeaturizes):
             )
 
         wstf_1, wstf_2, wstf_3, wstf_4 = self.wiener_sachtext(
+
             corpus.sizes.tokens_cnt,
             corpus.resources.surface['sent_len_tokens'],
-            corpus.resources.surface['toks_min_three_syllables'],
-            corpus.resources.surface['toks_larger_six_letters'],
-            corpus.resources.surface['toks_one_syllable']
+            corpus.resources.surface['cnt_toks_min_three_syllables'],
+            corpus.resources.surface['cnt_toks_larger_six_letters'],
+            corpus.resources.surface['cnt_toks_one_syllable']
         )
 
         if 'wiener_sachtextformel_1' in self.features:

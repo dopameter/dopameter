@@ -133,15 +133,25 @@ def detail_metrics(config):
             )
 
 
-
-def visualization(config):
+def visualize_detailed_features(config):
     logging.info('Tasks: plot')
     logging.info(config['output']['path_features_detail'])
     path_features_detail = config['output']['path_features_detail']
 
+    corpora_names = {c: c + ' [' + config['corpora'][c]['collection'] + ']' for c in config['corpora']}
+    collection_names = {config['corpora'][c]['collection']: c for c in config['corpora']}
+    collection_names = collection_names.keys()
+    xlabel = 'corpus'
+    if 'boxplot_scale' in config['settings']:
+        scale = config['settings']['boxplot_scale']
+    else:
+        scale = "linear"
+
     for feature_file in glob.glob(path_features_detail + os.sep + '**/', recursive=True):
 
         for f in glob.glob(feature_file + os.sep + '*.csv'):
+
+            print(feature_file)
 
             if feature_file.split(os.sep)[len(feature_file.split(os.sep)) - 2] in config['features'].keys():
                 data = pd.read_csv(
@@ -150,15 +160,27 @@ def visualization(config):
                     keep_default_na=False
                 )
                 data_bp = data.transpose().to_dict()
+                data_to_plot = pd.DataFrame([[float(data_bp[keys][vals]) for vals in data_bp[keys] if data_bp[keys][vals]] for keys in data_bp]).transpose()
+
+                if 'corpora' in feature_file:
+                    data_to_plot.rename(columns=corpora_names, inplace=True)
+                    data_to_plot.columns = data.index.values.tolist()#labels
+                    data_to_plot = data_to_plot.rename(columns=corpora_names)
+                    data_to_plot = data_to_plot.reindex(corpora_names.values(), axis=1)
+                else:
+                    data_to_plot.columns = data.index.values.tolist()  # labels
+                    data_to_plot = data_to_plot.reindex(collection_names, axis=1)
+                    xlabel = 'collection'
 
                 matrix_to_boxplot(
-                    title="Feature '" + os.path.basename(f).replace('.csv', '') + "'",
-                    labels=data.index.values.tolist(),
+                    title=os.path.basename(f).replace('.csv', '').replace('__', ': '),
                     file_plot=f.replace('.csv', ''),
-                    data=pd.DataFrame([[float(data_bp[keys][vals]) for vals in data_bp[keys] if data_bp[keys][vals]] for keys in data_bp]).transpose(),
+                    data=data_to_plot,
                     file_format_plots=config['settings']['file_format_plots'],
                     feature_cfg=os.path.basename(f).replace('.csv', ''),
-                    height=int(config['settings']['boxplot_height'])
+                    height=int(config['settings']['boxplot_height']),
+                    xlabel=xlabel,
+                    scale=scale
                 )
 
 def comparison(config):
@@ -172,8 +194,10 @@ def comparison(config):
         path_compare=config['output']['path_compare'],
         compare_tasks=config['compare'],
         file_format_features=config['settings']['file_format_features'],
+        file_format_plots=config['settings']['file_format_plots'],
         most_frequent_words=config['settings']['most_frequent_words'],
-        tasks=config['settings']['tasks']
+        tasks=config['settings']['tasks'],
+        store_compared_sources=config['settings']['store_compared_sources']
     )
 
     analysis.source_analytics()
